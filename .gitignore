@@ -1,0 +1,32 @@
+# ── Secrets — NEVER commit ──
+.env
+**/.env
+*.key
+*.pem
+
+# ── Python ──
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.venv/
+**/.venv/
+venv/
+env/
+
+# ── Logs ──
+*.log
+**/*.log
+
+# ── Caches ──
+.ruff_cache/
+**/.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+
+# ── Internal strategy docs — excluded from the PUBLIC repo ──
+# (business costs/margins/strategy — add back only if the repo is made private)
+docs/
+
+# ── OS ──
+Thumbs.db
+.DS_Store
