@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Assistant Manager · HQ Lead Engine</title>
+<style>
+  :root{--bg:#0b1412;--panel:#0f1c19;--panel2:#132420;--ink:#e9f2ef;--muted:#8ba39c;--faint:#5f726c;
+    --teal:#18b89e;--teal-deep:#0c6f5f;--line:#1e2f2b;--danger:#e2664a;--good:#25c08a;--amber:#d6a94a;}
+  *{box-sizing:border-box}
+  body{margin:0;height:100vh;display:flex;font-family:"Segoe UI",system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;overflow:hidden}
+  button{font-family:inherit;cursor:pointer;border:none;border-radius:9px;font-weight:600;transition:.15s}
+  input,select,textarea{font-family:inherit;font-size:14px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:10px 12px;width:100%;outline:none}
+  input:focus,select:focus,textarea:focus{border-color:var(--teal)} select:disabled{opacity:.7;cursor:not-allowed}
+  label{display:block;font-size:12px;color:var(--muted);margin:0 0 6px;font-weight:600;letter-spacing:.02em}
+  .side{width:290px;flex:none;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;height:100%}
+  .side .top{padding:20px 18px;border-bottom:1px solid var(--line)}
+  .side .top h1{margin:0;font-size:15px;font-weight:800} .side .top p{margin:3px 0 0;font-size:12px;color:var(--faint)}
+  .newbtn{margin:14px 16px;padding:11px;background:linear-gradient(180deg,#22d3b4,var(--teal));color:#052a24;border-radius:10px;font-weight:700;font-size:13.5px}
+  .newbtn:hover{filter:brightness(1.08)}
+  .list{overflow-y:auto;flex:1;padding:0 10px 16px}
+  .item{padding:12px 13px;border-radius:10px;margin-bottom:5px;cursor:pointer;border:1px solid transparent}
+  .item:hover{background:var(--panel2)} .item.active{background:var(--panel2);border-color:var(--teal)}
+  .item .nm{font-weight:600;display:flex;align-items:center;gap:7px}
+  .item .badge{font-size:10px;padding:1px 7px;border-radius:999px;font-weight:700}
+  .badge.out{background:rgba(24,184,158,.16);color:var(--teal)} .badge.in{background:rgba(214,169,74,.16);color:var(--amber)}
+  .item .meta{font-size:11.5px;color:var(--faint);margin-top:4px;font-family:Consolas,monospace}
+  .main{flex:1;overflow-y:auto;height:100%}
+  .empty{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--faint);gap:10px}
+  .bar{position:sticky;top:0;z-index:5;background:rgba(11,20,18,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:16px 28px;display:flex;align-items:center;gap:14px}
+  .bar .title{font-size:18px;font-weight:800;flex:1} .bar .id{font-size:12px;color:var(--faint);font-family:Consolas,monospace}
+  .btn-save{background:var(--teal);color:#052a24;padding:10px 20px} .btn-save:hover{filter:brightness(1.08)} .btn-save:disabled{opacity:.5}
+  .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--ink);padding:10px 16px} .btn-ghost:hover{background:var(--panel2)}
+  .btn-danger{background:transparent;border:1px solid rgba(226,102,74,.4);color:var(--danger);padding:10px 14px} .btn-danger:hover{background:rgba(226,102,74,.1)}
+  .btn-sm{padding:7px 12px;font-size:12.5px}
+  .content{padding:24px 28px;max-width:820px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin-bottom:16px}
+  .card h2{margin:0 0 4px;font-size:15px;font-weight:700} .card .desc{margin:0 0 16px;font-size:12.5px;color:var(--faint)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:16px} .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+  .field{margin-bottom:14px} .field:last-child{margin-bottom:0}
+  textarea{min-height:200px;line-height:1.55;resize:vertical;font-size:13.5px}
+  .slider{display:flex;align-items:center;gap:12px} .slider input[type=range]{flex:1;accent-color:var(--teal);padding:0}
+  .slider .val{width:44px;text-align:right;font-family:Consolas,monospace;color:var(--teal);font-size:13px}
+  .seg{display:inline-flex;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px}
+  .seg button{padding:8px 18px;border-radius:8px;background:transparent;color:var(--muted);font-weight:700;font-size:13px}
+  .seg button.on-out{background:rgba(24,184,158,.18);color:var(--teal)} .seg button.on-in{background:rgba(214,169,74,.18);color:var(--amber)}
+  .tool{border:1px solid var(--line);border-radius:11px;padding:15px;margin-bottom:12px;background:var(--bg)}
+  .tool .th{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .tool .builtin{font-size:11px;color:var(--amber);font-family:Consolas,monospace}
+  .chk{display:flex;gap:8px;align-items:center;margin:0;font-size:13px;color:var(--ink)} .chk input{width:auto}
+  .overlay{position:fixed;inset:0;background:rgba(4,8,7,.72);display:none;align-items:center;justify-content:center;z-index:30} .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:28px;max-width:560px;width:92%}
+  .modal h2{margin:0 0 6px;font-size:20px} .modal p{margin:0 0 20px;color:var(--muted);font-size:13.5px}
+  .choices{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .choice{border:1px solid var(--line);border-radius:14px;padding:20px;cursor:pointer;transition:.15s;text-align:center}
+  .choice:hover{border-color:var(--teal);background:var(--panel2);transform:translateY(-2px)}
+  .choice .ic{font-size:30px} .choice .t{font-weight:700;margin:8px 0 4px} .choice .d{font-size:12px;color:var(--faint)}
+  .modal .cancel{margin-top:18px;background:transparent;color:var(--muted);border:1px solid var(--line);padding:9px 16px}
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--good);color:#04241a;padding:11px 22px;border-radius:10px;font-weight:700;transition:transform .3s;z-index:40}
+  .toast.show{transform:translateX(-50%) translateY(0)} .toast.err{background:var(--danger);color:#2a0f08}
+</style>
+</head>
+<body>
+  <aside class="side">
+    <div class="top"><h1>HQ Lead Engine</h1><p>Assistant Manager</p></div>
+    <button class="newbtn" id="newBtn">+ New Assistant</button>
+    <div class="list" id="list"></div>
+  </aside>
+  <main class="main" id="main">
+    <div class="empty" id="empty"><div style="font-size:40px">🎙️</div><div>Select an assistant, or create a new one.</div></div>
+    <div id="editor" style="display:none"></div>
+  </main>
+  <div class="overlay" id="overlay"><div class="modal">
+    <h2>New assistant</h2><p>What are you building? This sets up the right fields and flow.</p>
+    <div class="choices">
+      <div class="choice" data-type="outbound"><div class="ic">📤</div><div class="t">Outbound</div><div class="d">Your agent <b>calls leads</b> — pitch, qualify, hand off.</div></div>
+      <div class="choice" data-type="inbound"><div class="ic">📥</div><div class="t">Inbound</div><div class="d">Leads <b>call your agent</b> — answer, help, enroll.</div></div>
+    </div>
+    <button class="cancel" id="cancelNew">Cancel</button>
+  </div></div>
+  <div class="toast" id="toast"></div>
+
+<script>
+let OPTIONS={llm:{openai:["gpt-4.1"]},stt:{deepgram:["nova-3"]},tts:{elevenlabs:["eleven_flash_v2_5"]}};
+let state={list:[],current:null,isNew:false};
+const $=(id)=>document.getElementById(id);
+function toast(m,e){const t=$("toast");t.textContent=m;t.className="toast show"+(e?" err":"");setTimeout(()=>t.className="toast"+(e?" err":""),2400);}
+async function api(p,o){const r=await fetch(p,o);if(!r.ok)throw new Error((await r.text())||r.status);return r.status===204?null:r.json();}
+function esc(s){return (s||"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
+function escA(s){return (s||"").replace(/"/g,"&quot;").replace(/</g,"&lt;");}
+function opts(a,sel){return (a||[]).map(v=>`<option ${v===sel?"selected":""}>${v}</option>`).join("");}
+
+async function boot(){ try{OPTIONS=await api("/api/options");}catch(e){}
+  $("newBtn").onclick=()=>$("overlay").classList.add("show");
+  $("cancelNew").onclick=()=>$("overlay").classList.remove("show");
+  document.querySelectorAll(".choice").forEach(c=>c.onclick=()=>createWithType(c.dataset.type));
+  await loadList();
+}
+async function loadList(){ state.list=await api("/api/assistants"); const el=$("list"); el.innerHTML="";
+  state.list.forEach(a=>{ const t=(a.type||"outbound"); const d=document.createElement("div");
+    d.className="item"+(state.current&&state.current.id===a.id&&!state.isNew?" active":"");
+    d.innerHTML=`<div class="nm"><span class="nmtxt"></span><span class="badge ${t==='inbound'?'in':'out'}">${t==='inbound'?'IN':'OUT'}</span></div><div class="meta">${a.llm||"—"} · ${(a.voice||"").slice(0,10)||"—"}</div>`;
+    d.querySelector(".nmtxt").textContent=a.name||a.id; d.onclick=()=>select(a.id); el.appendChild(d); });
+}
+async function select(id){ state.current=await api("/api/assistants/"+id); state.isNew=false; renderEditor(); loadList(); }
+async function createWithType(type){ $("overlay").classList.remove("show"); const d=await api("/api/defaults?type="+type);
+  state.current={id:null,config:d.config,prompt:d.prompt}; state.isNew=true; renderEditor(); loadList(); }
+
+function sl(id,label,val,min=0,max=1){return `<div class="field"><label>${label}</label><div class="slider"><input type="range" id="${id}" min="${min}" max="${max}" step="0.05" value="${val}"><span class="val" id="${id}_val"></span></div></div>`;}
+
+function toolsCard(c){
+  const tools=c.tools||[];
+  const blocks=tools.map((t,i)=>{
+    const builtin = t.name==="end_call";
+    return `<div class="tool">
+      <div class="th">
+        <input id="tool_${i}_name" value="${escA(t.name||"")}" style="max-width:280px;font-weight:600" ${builtin?"readonly":""}>
+        <button class="btn-danger btn-sm" onclick="removeTool(${i})">Remove</button>
+      </div>
+      <div class="field"><label>When the assistant should use it (description)</label><input id="tool_${i}_desc" value="${escA(t.description||"")}"></div>
+      ${builtin
+        ? `<div class="builtin">built-in — ends the call (no webhook)</div>`
+        : `<div class="field"><label>n8n webhook URL</label><input id="tool_${i}_url" value="${escA(t.webhook_url||"")}" placeholder="https://your-n8n/webhook/..."></div>`}
+      <label class="chk"><input type="checkbox" id="tool_${i}_enabled" ${t.enabled!==false?"checked":""}> Enabled</label>
+    </div>`;
+  }).join("");
+  return `<div class="card"><h2>Tools</h2>
+    <p class="desc">Actions the assistant can take mid-call — each calls an n8n webhook (like your send-enrollment-link / advisor-link tools). The model decides when to use them from the description.</p>
+    ${blocks}
+    <button class="btn-ghost btn-sm" onclick="addTool()">+ Add tool</button></div>`;
+}
+function retryCard(d){
+  return `<div class="card"><h2>Retry &amp; dialing <span class="builtin">outbound</span></h2>
+    <p class="desc">How the n8n dialer paces calls: initial delay after a lead comes in, retry ladder for no-answers, and how many calls run at once.</p>
+    <div class="row3">
+      <div class="field"><label>Initial delay (min)</label><input type="number" id="d_initial" value="${d.initial_delay_min??10}"></div>
+      <div class="field"><label>Max attempts</label><input type="number" id="d_attempts" value="${d.max_attempts??3}"></div>
+      <div class="field"><label>Retry interval (min)</label><input type="number" id="d_retry" value="${d.retry_interval_min??60}"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Concurrent calls (pool)</label><input type="number" id="d_pool" value="${d.pool_size??3}"></div>
+      <div class="field"><label>Business hours (local)</label><input id="d_hours" value="${escA(d.business_hours||"09:00-19:00")}"></div>
+    </div></div>`;
+}
+function integrationsCard(ig,type){
+  const crm=ig.suitecrm||{};
+  return `<div class="card"><h2>n8n &amp; SuiteCRM</h2>
+    <p class="desc">Where call outcomes are posted (n8n Result Handler → SuiteCRM), and the CRM the leads live in.</p>
+    <div class="field"><label>n8n result webhook (call outcome → transcript, status update)</label><input id="i_result" value="${escA(ig.result_webhook_url||"")}" placeholder="https://your-n8n/webhook/result-handler"></div>
+    <div class="row3">
+      <div class="field"><label>SuiteCRM base URL</label><input id="i_crm_base" value="${escA(crm.base_url||"")}" placeholder="https://crmga.com"></div>
+      <div class="field"><label>Module</label><input id="i_crm_module" value="${escA(crm.module||"GA_HQ_Students")}"></div>
+      <div class="field"><label>Status field</label><input id="i_crm_status" value="${escA(crm.status_field||"status")}"></div>
+    </div>
+    <div class="field"><label>${type==='outbound'?'Call from number (Telnyx) — next phase':'Receive on number (Telnyx) — next phase'}</label><input placeholder="(Phase 2 — telephony)" disabled></div></div>`;
+}
+
+function renderEditor(){
+  $("empty").style.display="none";
+  const c=state.current.config, ed=$("editor"); ed.style.display="block";
+  const tts=c.tts||{},llm=c.llm||{},stt=c.stt||{},type=c.type||"outbound";
+  const greetLabel=type==="outbound"?"Opening line — what the agent says first when the lead picks up":"Greeting — how the agent answers when someone calls in";
+  ed.innerHTML=`
+  <div class="bar">
+    <div class="title" id="barName">${esc(c.name||"New Assistant")}</div>
+    ${state.isNew?'<span class="id">unsaved</span>':`<span class="id">${state.current.id}</span>`}
+    <button class="btn-ghost" id="testBtn">▶ Test</button>
+    ${state.isNew?"":'<button class="btn-danger" id="delBtn">Delete</button>'}
+    <button class="btn-save" id="saveBtn">${state.isNew?"Create":"Save"}</button>
+  </div>
+  <div class="content">
+    <div class="card"><h2>Type &amp; identity</h2>
+      <div class="field"><label>Assistant type</label><div class="seg">
+        <button id="seg_out" class="${type==='outbound'?'on-out':''}">📤 Outbound</button>
+        <button id="seg_in" class="${type==='inbound'?'on-in':''}">📥 Inbound</button></div></div>
+      <div class="row">
+        <div class="field"><label>Assistant name</label><input id="f_name" value="${escA(c.name||"")}"></div>
+        <div class="field"><label>${greetLabel}</label><input id="f_greeting" value="${escA(c.greeting||"")}"></div>
+      </div></div>
+    <div class="card"><h2>Model</h2><p class="desc">OpenAI. mini/4o are fastest for live voice; gpt-5 is smartest but slower.</p>
+      <div class="row"><div class="field"><label>Provider</label><select disabled><option>OpenAI</option></select></div>
+      <div class="field"><label>Model</label><select id="f_llm">${opts(OPTIONS.llm.openai,llm.model)}</select></div></div></div>
+    <div class="card"><h2>Transcriber</h2><p class="desc">Deepgram. “phonecall” models are tuned for phone audio.</p>
+      <div class="row"><div class="field"><label>Provider</label><select disabled><option>Deepgram</option></select></div>
+      <div class="field"><label>Model</label><select id="f_stt">${opts(OPTIONS.stt.deepgram,stt.model)}</select></div></div></div>
+    <div class="card"><h2>Voice</h2><p class="desc">ElevenLabs. Change the voice ID (from your library), model, and delivery — lower stability = more expressive, speed &lt; 1 = slower.</p>
+      <div class="row"><div class="field"><label>Voice ID</label><input id="f_voice" value="${escA(tts.voice_id||"")}"></div>
+      <div class="field"><label>Model</label><select id="f_ttsmodel">${opts(OPTIONS.tts.elevenlabs,tts.model)}</select></div></div>
+      ${sl("f_stability","Stability",tts.stability??0.4)}${sl("f_similarity","Similarity boost",tts.similarity_boost??0.8)}
+      ${sl("f_style","Style",tts.style??0.3)}${sl("f_speed","Speed",tts.speed??0.9,0.7,1.2)}</div>
+    <div class="card"><h2>System prompt</h2><p class="desc">Who the assistant is and how it talks — humanness + business logic.</p>
+      <textarea id="f_prompt">${esc(state.current.prompt||"")}</textarea></div>
+    <div class="card"><h2>Advanced</h2>${sl("f_vad","End-of-speech wait (sec) — lower = snappier",c.vad_stop_secs??0.5,0.2,1.2)}</div>
+    ${toolsCard(c)}
+    ${type==='outbound'?retryCard(c.dialing||{}):""}
+    ${integrationsCard(c.integrations||{},type)}
+  </div>`;
+  ed.querySelectorAll("input[type=range]").forEach(r=>{const o=ed.querySelector("#"+r.id+"_val");const u=()=>o.textContent=(+r.value).toFixed(2);r.addEventListener("input",u);u();});
+  $("f_name").addEventListener("input",e=>$("barName").textContent=e.target.value||"New Assistant");
+  $("seg_out").onclick=()=>switchType("outbound"); $("seg_in").onclick=()=>switchType("inbound");
+  $("saveBtn").onclick=save; $("testBtn").onclick=()=>window.open("http://localhost:8000","_blank");
+  if($("delBtn"))$("delBtn").onclick=del;
+}
+function switchType(t){const g=gather();state.current.config=g.config;state.current.prompt=g.prompt;state.current.config.type=t;renderEditor();}
+window.addTool=function(){const g=gather();state.current.config=g.config;state.current.prompt=g.prompt;
+  (state.current.config.tools=state.current.config.tools||[]).push({name:"new_tool",description:"",webhook_url:"",enabled:true,properties:{},required:[]});renderEditor();};
+window.removeTool=function(i){const g=gather();state.current.config=g.config;state.current.prompt=g.prompt;
+  state.current.config.tools.splice(i,1);renderEditor();};
+
+function v(id,fb){const e=$(id);return e?e.value:fb;}
+function gather(){
+  const cfg=state.current.config;
+  const tools=(cfg.tools||[]).map((t,i)=>({
+    name:v(`tool_${i}_name`,t.name), description:v(`tool_${i}_desc`,t.description),
+    webhook_url:($(`tool_${i}_url`)?$(`tool_${i}_url`).value:(t.webhook_url||"")),
+    enabled:($(`tool_${i}_enabled`)?$(`tool_${i}_enabled`).checked:t.enabled!==false),
+    properties:t.properties||{}, required:t.required||[],
+  }));
+  const dialing = $("d_initial") ? {
+    initial_delay_min:+v("d_initial",10),max_attempts:+v("d_attempts",3),retry_interval_min:+v("d_retry",60),
+    pool_size:+v("d_pool",3),business_hours:v("d_hours","09:00-19:00"),
+  } : (cfg.dialing||{});
+  const integrations = {
+    result_webhook_url:v("i_result",(cfg.integrations||{}).result_webhook_url||""),
+    suitecrm:{ base_url:v("i_crm_base",""), module:v("i_crm_module","GA_HQ_Students"), status_field:v("i_crm_status","status") },
+  };
+  return { config:{
+    name:v("f_name","Untitled")||"Untitled", type:(cfg.type||"outbound"),
+    stt:{provider:"deepgram",model:v("f_stt","nova-3")},
+    llm:{provider:"openai",model:v("f_llm","gpt-4.1")},
+    tts:{provider:"elevenlabs",voice_id:v("f_voice",""),model:v("f_ttsmodel","eleven_flash_v2_5"),
+      stability:+v("f_stability",0.4),similarity_boost:+v("f_similarity",0.8),style:+v("f_style",0.3),speed:+v("f_speed",0.9)},
+    greeting:v("f_greeting",""), vad_stop_secs:+v("f_vad",0.5),
+    tools, dialing, integrations,
+  }, prompt:v("f_prompt","") };
+}
+async function save(){const b=$("saveBtn");b.disabled=true;
+  try{const p=gather();
+    if(state.isNew){const r=await api("/api/assistants",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(p)});state.current=r;state.isNew=false;toast("Assistant created");}
+    else{await api("/api/assistants/"+state.current.id,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(p)});toast("Saved — restart engine to apply to live calls");}
+    await loadList();renderEditor();
+  }catch(e){toast("Save failed: "+e.message,true);} b.disabled=false;}
+async function del(){if(!confirm("Delete '"+state.current.id+"'? Can't be undone."))return;
+  try{await api("/api/assistants/"+state.current.id,{method:"DELETE"});toast("Deleted");state.current=null;$("editor").style.display="none";$("empty").style.display="flex";await loadList();}catch(e){toast("Delete failed: "+e.message,true);}}
+boot();
+</script>
+</body>
+</html>

@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sofia · HQ Learning Hub</title>
+<style>
+  :root{
+    --bg0:#08110f; --bg1:#0d1c19; --ink:#eaf3f0; --muted:#8aa39c;
+    --teal:#17b89e; --teal-deep:#0c6f5f; --line:#1c2e2a; --danger:#e2664a;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
+    color:var(--ink); background:radial-gradient(1200px 800px at 50% -10%,#123029 0%,var(--bg1) 45%,var(--bg0) 100%);
+    min-height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:24px; overflow:hidden;
+  }
+  .brand{position:fixed; top:22px; left:24px; display:flex; align-items:center; gap:10px; font-size:14px; letter-spacing:.02em; color:var(--muted)}
+  .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--teal);box-shadow:0 0 12px var(--teal)}
+  .stage{display:flex;flex-direction:column;align-items:center;gap:30px;max-width:560px;width:100%}
+
+  /* orb */
+  .orb-wrap{position:relative;width:220px;height:220px;display:grid;place-items:center}
+  .orb{
+    width:150px;height:150px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#3fe9cd 0%,var(--teal) 40%,var(--teal-deep) 100%);
+    box-shadow:0 0 60px rgba(23,184,158,.45), inset 0 0 40px rgba(0,0,0,.25);
+    transform:scale(calc(1 + var(--level,0) * .35));
+    transition:transform .08s ease-out, box-shadow .2s ease;
+    position:relative;z-index:2;
+  }
+  .orb.speaking{box-shadow:0 0 90px rgba(63,233,205,.75), inset 0 0 40px rgba(0,0,0,.2)}
+  .ring{position:absolute;inset:0;border-radius:50%;border:1px solid rgba(23,184,158,.25);
+    transform:scale(calc(1.1 + var(--level,0) * .6));opacity:calc(.5 - var(--level,0)*.2);transition:transform .1s}
+  .orb.idle{animation:breathe 4s ease-in-out infinite}
+  @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+
+  h1{margin:0;font-size:30px;font-weight:800;letter-spacing:-.02em}
+  .sub{margin:6px 0 0;color:var(--muted);font-size:15px}
+  .status{display:inline-flex;align-items:center;gap:9px;padding:8px 16px;border:1px solid var(--line);
+    border-radius:999px;background:rgba(255,255,255,.03);font-size:14px;color:var(--muted);min-height:38px}
+  .status .pip{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+  .status.live .pip{background:var(--teal);box-shadow:0 0 10px var(--teal);animation:blink 1.4s infinite}
+  .status.err{color:var(--danger);border-color:rgba(226,102,74,.4)} .status.err .pip{background:var(--danger)}
+  @keyframes blink{50%{opacity:.35}}
+
+  button{font-family:inherit;cursor:pointer;border:none;border-radius:999px;font-weight:700;font-size:16px;
+    padding:15px 40px;transition:transform .1s ease,filter .2s,background .2s}
+  button:active{transform:translateY(1px)}
+  .btn-start{background:linear-gradient(180deg,#22d3b4,var(--teal));color:#062a24}
+  .btn-start:hover{filter:brightness(1.08)}
+  .btn-end{background:transparent;color:var(--danger);border:1px solid rgba(226,102,74,.45)}
+  .btn-end:hover{background:rgba(226,102,74,.1)}
+
+  .captions{width:100%;max-width:560px;min-height:64px;max-height:170px;overflow-y:auto;
+    display:flex;flex-direction:column;gap:8px;font-size:14.5px;line-height:1.5;padding-right:4px}
+  .cap{opacity:0;animation:fade .3s forwards}
+  .cap .who{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--teal);margin-right:8px;font-weight:700}
+  .cap.you .who{color:var(--muted)}
+  .cap .txt{color:var(--ink)}
+  @keyframes fade{to{opacity:1}}
+  .hint{color:var(--muted);font-size:13px;text-align:center;max-width:420px}
+  audio{display:none}
+</style>
+</head>
+<body>
+  <div class="brand"><span class="dot"></span> HQ Learning Hub</div>
+
+  <div class="stage">
+    <div class="orb-wrap">
+      <div class="ring"></div>
+      <div id="orb" class="orb idle"></div>
+    </div>
+
+    <div style="text-align:center">
+      <h1>Sofia</h1>
+      <p class="sub">AI voice assistant</p>
+    </div>
+
+    <div id="status" class="status"><span class="pip"></span><span id="statusText">Ready when you are</span></div>
+
+    <button id="btn" class="btn-start">Start call</button>
+
+    <div id="captions" class="captions"></div>
+    <p class="hint" id="hint">Click “Start call”, allow your microphone, and just talk — Sofia will pick up.</p>
+  </div>
+
+  <audio id="botAudio" autoplay></audio>
+
+<script type="module">
+  const OFFER_URL = "http://localhost:7860/api/offer";
+  const orb = document.getElementById("orb");
+  const statusEl = document.getElementById("status");
+  const statusText = document.getElementById("statusText");
+  const btn = document.getElementById("btn");
+  const caps = document.getElementById("captions");
+  const hint = document.getElementById("hint");
+  const botAudio = document.getElementById("botAudio");
+
+  let client = null, connected = false, analyserRAF = null;
+
+  function setStatus(text, cls){
+    statusText.textContent = text;
+    statusEl.className = "status" + (cls ? " " + cls : "");
+  }
+  function addCap(who, text){
+    if(!text) return;
+    const d = document.createElement("div");
+    d.className = "cap " + (who === "you" ? "you" : "sofia");
+    d.innerHTML = `<span class="who">${who === "you" ? "You" : "Sofia"}</span><span class="txt"></span>`;
+    d.querySelector(".txt").textContent = text;
+    caps.appendChild(d); caps.scrollTop = caps.scrollHeight;
+  }
+  function speaking(on){ orb.classList.toggle("speaking", on); orb.classList.toggle("idle", !on && !connected); }
+
+  // animate the orb from the bot's audio level
+  function startAnalyser(stream){
+    try{
+      const ac = new (window.AudioContext||window.webkitAudioContext)();
+      const src = ac.createMediaStreamSource(stream);
+      const an = ac.createAnalyser(); an.fftSize = 256; src.connect(an);
+      const data = new Uint8Array(an.frequencyBinCount);
+      const loop = () => {
+        an.getByteFrequencyData(data);
+        let sum=0; for(const v of data) sum+=v;
+        const level = Math.min(1, (sum/data.length/255) * 2.2);
+        orb.style.setProperty("--level", level.toFixed(3));
+        analyserRAF = requestAnimationFrame(loop);
+      };
+      loop();
+    }catch(e){ console.warn("analyser failed", e); }
+  }
+
+  async function start(){
+    btn.disabled = true;
+    setStatus("Connecting…", "live");
+    hint.style.display = "none";
+    try{
+      const { PipecatClient } = await import("https://esm.sh/@pipecat-ai/client-js");
+      const { SmallWebRTCTransport } = await import("https://esm.sh/@pipecat-ai/small-webrtc-transport");
+
+      client = new PipecatClient({
+        transport: new SmallWebRTCTransport({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] }),
+        enableMic: true,
+        enableCam: false,
+        callbacks: {
+          onConnected: () => { connected = true; setStatus("Listening…", "live"); orb.classList.remove("idle");
+            btn.textContent = "End call"; btn.className = "btn-end"; btn.disabled = false; },
+          onDisconnected: () => cleanup(),
+          onBotReady: () => setStatus("Sofia is here — go ahead", "live"),
+          onBotStartedSpeaking: () => { speaking(true); setStatus("Sofia is speaking", "live"); },
+          onBotStoppedSpeaking: () => { speaking(false); setStatus("Listening…", "live"); },
+          onTranscript: (d) => { if(d?.text && d?.final !== false) addCap(d?.role === "user" ? "you" : "sofia", d.text); },
+          onBotTranscript: (d) => addCap("sofia", d?.text),
+          onUserTranscript: (d) => { if(d?.final) addCap("you", d?.text); },
+          onTrackStarted: (track, participant) => {
+            if(participant && participant.local) return;
+            if(track.kind === "audio"){ const ms = new MediaStream([track]); botAudio.srcObject = ms; startAnalyser(ms); }
+          },
+          onError: (e) => { console.error("pipecat error", e); setStatus("Error: " + (e?.message || e), "err"); btn.disabled=false; },
+        },
+      });
+
+      await client.connect({ webrtcUrl: OFFER_URL });
+    }catch(err){
+      console.error(err);
+      setStatus("Couldn't connect: " + (err?.message || err), "err");
+      btn.textContent = "Try again"; btn.className = "btn-start"; btn.disabled = false;
+    }
+  }
+
+  async function stop(){
+    try{ if(client) await client.disconnect(); }catch(e){}
+    cleanup();
+  }
+  function cleanup(){
+    connected = false;
+    if(analyserRAF) cancelAnimationFrame(analyserRAF);
+    orb.style.setProperty("--level","0"); speaking(false); orb.classList.add("idle");
+    setStatus("Call ended", ""); btn.textContent = "Start call"; btn.className = "btn-start"; btn.disabled = false;
+    client = null;
+  }
+
+  btn.addEventListener("click", () => (connected ? stop() : start()));
+</script>
+</body>
+</html>

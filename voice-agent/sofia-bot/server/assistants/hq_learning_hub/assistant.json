@@ -1,5 +1,6 @@
 {
   "name": "HQ Learning Hub — Sofia",
+  "type": "outbound",
   "stt": {
     "provider": "deepgram",
     "model": "nova-3"
@@ -18,5 +19,47 @@
     "speed": 0.9
   },
   "greeting": "Greet the person warmly as Sofia from HQ Learning Hub and ask if it's a good time for a quick chat.",
-  "vad_stop_secs": 0.5
+  "vad_stop_secs": 0.5,
+  "tools": [
+    {
+      "name": "send_enrollment_link",
+      "description": "Email the enrollment page to the lead once they agree to enroll. Only say it's sent after this succeeds.",
+      "webhook_url": "",
+      "enabled": true,
+      "properties": {
+        "leadEmail": { "type": "string", "description": "the lead's email on file" },
+        "leadName": { "type": "string", "description": "the lead's first name" }
+      },
+      "required": []
+    },
+    {
+      "name": "send_advisor_booking_link",
+      "description": "Email a link to book a call with a human advisor. Fallback when they can't finish enrolling or the link didn't arrive.",
+      "webhook_url": "",
+      "enabled": true,
+      "properties": {
+        "leadEmail": { "type": "string", "description": "the lead's email on file" }
+      },
+      "required": []
+    },
+    {
+      "name": "end_call",
+      "description": "End the call after a warm goodbye — when they've enrolled, booked an advisor, aren't interested, or said goodbye.",
+      "webhook_url": "",
+      "enabled": true,
+      "properties": {},
+      "required": []
+    }
+  ],
+  "dialing": {
+    "initial_delay_min": 10,
+    "max_attempts": 3,
+    "retry_interval_min": 60,
+    "pool_size": 3,
+    "business_hours": "09:00-19:00"
+  },
+  "integrations": {
+    "result_webhook_url": "",
+    "suitecrm": { "base_url": "https://crmga.com", "module": "GA_HQ_Students", "status_field": "status" }
+  }
 }

@@ -26,11 +26,13 @@ Run with::
 import json
 import os
 
+import aiohttp
 from dotenv import load_dotenv
 from loguru import logger
+from pipecat.adapters.schemas.function_schema import FunctionSchema
 from pipecat.audio.vad.silero import SileroVADAnalyzer
 from pipecat.audio.vad.vad_analyzer import VADParams
-from pipecat.frames.frames import LLMRunFrame
+from pipecat.frames.frames import EndFrame, LLMRunFrame
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.worker import PipelineParams, PipelineWorker
 from pipecat.processors.aggregators.llm_context import LLMContext
@@ -40,7 +42,7 @@ from pipecat.processors.aggregators.llm_response_universal import (
 )
 from pipecat.runner.types import RunnerArguments
 from pipecat.runner.utils import create_transport
-from pipecat.services.deepgram.stt import DeepgramSTTService
+from pipecat.services.deepgram.stt import DeepgramSTTService, DeepgramSTTSettings
 from pipecat.services.elevenlabs.tts import ElevenLabsTTSService
 from pipecat.services.openai.llm import OpenAILLMService
 from pipecat.transports.base_transport import BaseTransport, TransportParams
@@ -71,11 +73,15 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
     """Run one voice session for the selected assistant."""
     logger.info(f"Starting bot: {ASSISTANT.get('name', ASSISTANT_ID)}")
 
+    stt_cfg = ASSISTANT.get("stt", {})
     llm_cfg = ASSISTANT.get("llm", {})
     tts_cfg = ASSISTANT.get("tts", {})
 
-    # Speech-to-Text — Deepgram (default model is nova-3, the current best).
-    stt = DeepgramSTTService(api_key=os.getenv("DEEPGRAM_API_KEY"))
+    # Speech-to-Text — Deepgram. Model from the assistant config (default nova-3).
+    stt = DeepgramSTTService(
+        api_key=os.getenv("DEEPGRAM_API_KEY"),
+        settings=DeepgramSTTSettings(model=stt_cfg.get("model", "nova-3")),
+    )
 
     # LLM — OpenAI. Model comes from the assistant config (default gpt-4.1).
     llm = OpenAILLMService(
@@ -102,7 +108,24 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
         ),
     )
 
-    context = LLMContext()
+    # Tools (function calling → n8n webhooks). Only advertise tools that are
+    # actually executable: end_call, or a tool with a webhook_url configured.
+    tool_defs = [
+        t
+        for t in ASSISTANT.get("tools", [])
+        if t.get("enabled", True) and (t.get("name") == "end_call" or t.get("webhook_url"))
+    ]
+    tool_schemas = [
+        FunctionSchema(
+            name=t["name"],
+            description=t.get("description", ""),
+            properties=t.get("properties", {}),
+            required=t.get("required", []),
+        )
+        for t in tool_defs
+    ]
+
+    context = LLMContext(tools=tool_schemas) if tool_schemas else LLMContext()
     user_aggregator, assistant_aggregator = LLMContextAggregatorPair(
         context,
         user_params=LLMUserAggregatorParams(
@@ -138,6 +161,45 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
         ),
         observers=[],
     )
+
+    # --- Tool handlers: each webhook tool POSTs its args to the configured n8n
+    # webhook and returns the response to the model (same pattern as the old Vapi
+    # tools). end_call ends the session after a warm goodbye. ---
+    def make_webhook_handler(url: str):
+        async def handler(params):
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(
+                        url,
+                        json=dict(params.arguments or {}),
+                        timeout=aiohttp.ClientTimeout(total=15),
+                    ) as resp:
+                        text = await resp.text()
+                result = text
+                try:
+                    data = json.loads(text)
+                    result = data.get("result") or data.get("message") or text
+                except Exception:
+                    pass
+                await params.result_callback(result or "Done.")
+            except Exception as e:
+                logger.error(f"Tool webhook failed ({url}): {e}")
+                await params.result_callback("That didn't go through — I can try again or book an advisor.")
+
+        return handler
+
+    async def end_call_handler(params):
+        await params.result_callback("Okay, take care!")
+        await worker.queue_frames([EndFrame()])
+
+    for t in tool_defs:
+        name = t["name"]
+        if name == "end_call":
+            llm.register_function("end_call", end_call_handler)
+        elif t.get("webhook_url"):
+            llm.register_function(name, make_webhook_handler(t["webhook_url"]))
+    if tool_defs:
+        logger.info(f"Registered tools: {[t['name'] for t in tool_defs]}")
 
     @worker.rtvi.event_handler("on_client_ready")
     async def on_client_ready(rtvi):
