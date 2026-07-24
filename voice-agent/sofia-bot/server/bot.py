@@ -194,6 +194,20 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
     # tools). end_call ends the session after a warm goodbye. ---
     def make_webhook_handler(url: str):
         async def handler(params):
+            args = dict(params.arguments or {})
+            # Guard: never forward unfilled template placeholders (e.g. "{{leadEmail}}")
+            # or a malformed email — that silently mails a junk address. Ask instead.
+            if any("{{" in str(v) for v in args.values()):
+                await params.result_callback(
+                    "I don't have that on file — I need to ask the caller for it before sending."
+                )
+                return
+            em = args.get("leadEmail")
+            if em is not None and ("@" not in str(em) or "." not in str(em).split("@")[-1]):
+                await params.result_callback(
+                    "That email doesn't look complete — reconfirm it with the caller, then try again."
+                )
+                return
             try:
                 async with aiohttp.ClientSession() as session:
                     async with session.post(

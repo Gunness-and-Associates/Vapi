@@ -11,15 +11,15 @@
   },
   "tts": {
     "provider": "elevenlabs",
-    "voice_id": "FGY2WhTYpPnrIDTdsKH5",
+    "voice_id": "cgSgspJ2msm6clMCkdW9",
     "model": "eleven_flash_v2_5",
-    "stability": 0.4,
-    "similarity_boost": 0.8,
-    "style": 0.3,
+    "stability": 0.45,
+    "similarity_boost": 0.85,
+    "style": 0.5,
     "speed": 0.9
   },
   "greeting": "Greet them warmly as Sofia from HQ Learning Hub, say in one line you're following up on the Canadian job market form they filled out, and ask if it's a good time for a quick chat.",
-  "vad_stop_secs": 0.5,
+  "vad_stop_secs": 0.9,
   "tools": [
     {
       "name": "send_enrollment_link",
