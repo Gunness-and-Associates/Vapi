@@ -18,14 +18,14 @@
     "style": 0.3,
     "speed": 0.9
   },
-  "greeting": "Greet the person warmly as Sofia from HQ Learning Hub and ask if now's a good time to chat.",
+  "greeting": "Warmly greet them as Sofia from HQ Learning Hub, mention it's just a quick call, and ask if it's a good moment.",
   "vad_stop_secs": 0.5,
   "tools": [
     {
       "name": "send_enrollment_link",
       "description": "Email the enrollment page to the lead once they agree to enroll. Only say it's sent after this succeeds.",
       "webhook_url": "https://n8n.srv1451835.hstgr.cloud/webhook/hq-send-enrollment-link",
-      "enabled": true,
+      "enabled": false,
       "properties": {
         "leadEmail": { "type": "string", "description": "the lead's email on file" },
         "leadName": { "type": "string", "description": "the lead's first name" }
@@ -36,7 +36,7 @@
       "name": "send_advisor_booking_link",
       "description": "Email a link to book a call with a human advisor. Fallback when they can't finish enrolling or the link didn't arrive.",
       "webhook_url": "https://n8n.srv1451835.hstgr.cloud/webhook/hq-send-advisor-link",
-      "enabled": true,
+      "enabled": false,
       "properties": {
         "leadEmail": { "type": "string", "description": "the lead's email on file" }
       },
