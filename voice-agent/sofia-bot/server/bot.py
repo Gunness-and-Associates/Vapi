@@ -23,8 +23,11 @@ Run with::
     ASSISTANT_ID=other uv run bot.py
 """
 
+import asyncio
 import json
 import os
+import time
+from datetime import datetime
 
 import aiohttp
 from dotenv import load_dotenv
@@ -48,6 +51,8 @@ from pipecat.services.openai.llm import OpenAILLMService
 from pipecat.transports.base_transport import BaseTransport, TransportParams
 from pipecat.workers.runner import WorkerRunner
 
+import rag
+
 load_dotenv(override=True)
 
 # ── Load the selected assistant ───────────────────────────────────────────────
@@ -66,6 +71,8 @@ def load_assistant(assistant_id: str) -> dict:
 
 
 ASSISTANT = load_assistant(ASSISTANT_ID)
+ASSISTANT_DIR = os.path.join(_ASSISTANTS_DIR, ASSISTANT_ID)
+CALLS_ENDPOINT = os.getenv("CALLS_ENDPOINT", "http://localhost:8080/api/calls")
 logger.info(f"Loaded assistant '{ASSISTANT_ID}': {ASSISTANT.get('name', ASSISTANT_ID)}")
 
 
@@ -76,6 +83,16 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
     stt_cfg = ASSISTANT.get("stt", {})
     llm_cfg = ASSISTANT.get("llm", {})
     tts_cfg = ASSISTANT.get("tts", {})
+
+    # Knowledge base: if this assistant has an index, expose a lookup tool + nudge the prompt.
+    kb_enabled = rag.index_stats(ASSISTANT_DIR).get("chunks", 0) > 0
+    system_instruction = ASSISTANT["system_prompt"]
+    if kb_enabled:
+        system_instruction += (
+            "\n\nKNOWLEDGE BASE: You have documents about the program. When asked something "
+            "specific you're not fully sure of, call query_knowledge_base with the question FIRST, "
+            "then answer naturally from what it returns. Never make facts up."
+        )
 
     # Speech-to-Text — Deepgram. Model from the assistant config (default nova-3).
     stt = DeepgramSTTService(
@@ -88,7 +105,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
         api_key=os.getenv("OPENAI_API_KEY"),
         settings=OpenAILLMService.Settings(
             model=llm_cfg.get("model", os.getenv("OPENAI_MODEL", "gpt-4.1")),
-            system_instruction=ASSISTANT["system_prompt"],
+            system_instruction=system_instruction,
         ),
     )
 
@@ -124,6 +141,16 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
         )
         for t in tool_defs
     ]
+
+    if kb_enabled:
+        tool_schemas.append(
+            FunctionSchema(
+                name="query_knowledge_base",
+                description="Look up specific facts about the program from the uploaded documents. Use whenever you're asked something specific you're not fully sure of, before answering.",
+                properties={"query": {"type": "string", "description": "what to look up"}},
+                required=["query"],
+            )
+        )
 
     context = LLMContext(tools=tool_schemas) if tool_schemas else LLMContext()
     user_aggregator, assistant_aggregator = LLMContextAggregatorPair(
@@ -198,8 +225,23 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
             llm.register_function("end_call", end_call_handler)
         elif t.get("webhook_url"):
             llm.register_function(name, make_webhook_handler(t["webhook_url"]))
-    if tool_defs:
-        logger.info(f"Registered tools: {[t['name'] for t in tool_defs]}")
+
+    if kb_enabled:
+        async def kb_handler(params):
+            q = (params.arguments or {}).get("query", "")
+            try:
+                passages = await asyncio.to_thread(rag.search, ASSISTANT_DIR, q, 4)
+                result = "\n\n---\n\n".join(passages) if passages else "Nothing relevant found in the knowledge base."
+            except Exception as e:
+                logger.error(f"KB search failed: {e}")
+                result = "Knowledge base lookup didn't work."
+            await params.result_callback(result)
+
+        llm.register_function("query_knowledge_base", kb_handler)
+
+    registered = [t["name"] for t in tool_defs] + (["query_knowledge_base"] if kb_enabled else [])
+    if registered:
+        logger.info(f"Registered tools: {registered}")
 
     @worker.rtvi.event_handler("on_client_ready")
     async def on_client_ready(rtvi):
@@ -214,13 +256,47 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
         )
         await worker.queue_frames([LLMRunFrame()])
 
+    call_state = {"start": None}
+
+    async def log_call():
+        """At call end, post a record (transcript, duration, outcome) to the dashboard."""
+        try:
+            start = call_state.get("start")
+            secs = int(time.time() - start) if start else 0
+            turns = [
+                m
+                for m in context.get_messages()
+                if m.get("role") in ("user", "assistant")
+                and isinstance(m.get("content"), str)
+                and m["content"].strip()
+            ]
+            transcript = "\n".join(
+                f'{"Caller" if m["role"] == "user" else "Agent"}: {m["content"]}' for m in turns
+            )
+            record = {
+                "time": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                "assistant": ASSISTANT.get("name", ASSISTANT_ID),
+                "direction": ASSISTANT.get("type", "outbound"),
+                "duration": f"{secs // 60}:{secs % 60:02d}",
+                "outcome": "completed" if turns else "no conversation",
+                "turns": len(turns),
+                "transcript": transcript,
+            }
+            async with aiohttp.ClientSession() as s:
+                await s.post(CALLS_ENDPOINT, json=record, timeout=aiohttp.ClientTimeout(total=8))
+            logger.info(f"Logged call: {secs}s, {len(turns)} turns")
+        except Exception as e:
+            logger.error(f"log_call failed: {e}")
+
     @transport.event_handler("on_client_connected")
     async def on_client_connected(transport, client):
+        call_state["start"] = time.time()
         logger.info("Client connected")
 
     @transport.event_handler("on_client_disconnected")
     async def on_client_disconnected(transport, client):
         logger.info("Client disconnected")
+        await log_call()
         await worker.cancel()
 
     runner = WorkerRunner(handle_sigint=False)

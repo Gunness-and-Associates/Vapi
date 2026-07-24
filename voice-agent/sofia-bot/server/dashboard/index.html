@@ -3,245 +3,334 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Assistant Manager · HQ Lead Engine</title>
+<title>HQ Lead Engine · Platform</title>
 <style>
-  :root{--bg:#0b1412;--panel:#0f1c19;--panel2:#132420;--ink:#e9f2ef;--muted:#8ba39c;--faint:#5f726c;
-    --teal:#18b89e;--teal-deep:#0c6f5f;--line:#1e2f2b;--danger:#e2664a;--good:#25c08a;--amber:#d6a94a;}
+  :root{
+    --bg:#0a0f0e; --panel:#101a17; --panel2:#16231f; --raise:#1a2a25;
+    --ink:#eef4f2; --muted:#93a8a2; --faint:#63756f;
+    --line:#1d2c28; --line2:#2a3d37;
+    --teal:#1cc0a4; --teal2:#2fe0c0; --teal-deep:#0c6f5f; --teal-ghost:rgba(28,192,164,.12);
+    --amber:#e0b155; --danger:#e2664a; --good:#28c892;
+    --sh:0 1px 2px rgba(0,0,0,.4),0 8px 30px rgba(0,0,0,.22);
+    --r:13px;
+  }
   *{box-sizing:border-box}
-  body{margin:0;height:100vh;display:flex;font-family:"Segoe UI",system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;overflow:hidden}
-  button{font-family:inherit;cursor:pointer;border:none;border-radius:9px;font-weight:600;transition:.15s}
-  input,select,textarea{font-family:inherit;font-size:14px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:10px 12px;width:100%;outline:none}
-  input:focus,select:focus,textarea:focus{border-color:var(--teal)} select:disabled{opacity:.7;cursor:not-allowed}
-  label{display:block;font-size:12px;color:var(--muted);margin:0 0 6px;font-weight:600;letter-spacing:.02em}
-  .side{width:290px;flex:none;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;height:100%}
-  .side .top{padding:20px 18px;border-bottom:1px solid var(--line)}
-  .side .top h1{margin:0;font-size:15px;font-weight:800} .side .top p{margin:3px 0 0;font-size:12px;color:var(--faint)}
-  .newbtn{margin:14px 16px;padding:11px;background:linear-gradient(180deg,#22d3b4,var(--teal));color:#052a24;border-radius:10px;font-weight:700;font-size:13.5px}
-  .newbtn:hover{filter:brightness(1.08)}
-  .list{overflow-y:auto;flex:1;padding:0 10px 16px}
-  .item{padding:12px 13px;border-radius:10px;margin-bottom:5px;cursor:pointer;border:1px solid transparent}
-  .item:hover{background:var(--panel2)} .item.active{background:var(--panel2);border-color:var(--teal)}
-  .item .nm{font-weight:600;display:flex;align-items:center;gap:7px}
-  .item .badge{font-size:10px;padding:1px 7px;border-radius:999px;font-weight:700}
-  .badge.out{background:rgba(24,184,158,.16);color:var(--teal)} .badge.in{background:rgba(214,169,74,.16);color:var(--amber)}
-  .item .meta{font-size:11.5px;color:var(--faint);margin-top:4px;font-family:Consolas,monospace}
-  .main{flex:1;overflow-y:auto;height:100%}
-  .empty{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--faint);gap:10px}
-  .bar{position:sticky;top:0;z-index:5;background:rgba(11,20,18,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:16px 28px;display:flex;align-items:center;gap:14px}
-  .bar .title{font-size:18px;font-weight:800;flex:1} .bar .id{font-size:12px;color:var(--faint);font-family:Consolas,monospace}
-  .btn-save{background:var(--teal);color:#052a24;padding:10px 20px} .btn-save:hover{filter:brightness(1.08)} .btn-save:disabled{opacity:.5}
-  .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--ink);padding:10px 16px} .btn-ghost:hover{background:var(--panel2)}
-  .btn-danger{background:transparent;border:1px solid rgba(226,102,74,.4);color:var(--danger);padding:10px 14px} .btn-danger:hover{background:rgba(226,102,74,.1)}
+  ::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:var(--line2);border-radius:6px}
+  body{margin:0;height:100vh;display:flex;font-family:"Segoe UI",system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;overflow:hidden;-webkit-font-smoothing:antialiased}
+  button{font-family:inherit;cursor:pointer;border:none;border-radius:10px;font-weight:600;transition:.14s ease}
+  input,select,textarea{font-family:inherit;font-size:13.5px;color:var(--ink);background:var(--bg);border:1px solid var(--line2);border-radius:10px;padding:10px 12px;width:100%;outline:none;transition:.14s}
+  input:focus,select:focus,textarea:focus{border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-ghost)}
+  select:disabled{opacity:.6}
+  label{display:block;font-size:11px;color:var(--muted);margin:0 0 7px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+  .hint{font-size:12px;color:var(--faint);margin:6px 0 0;line-height:1.5}
+  .eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--teal);font-weight:700}
+
+  /* sidebar */
+  .side{width:238px;flex:none;background:linear-gradient(180deg,var(--panel),var(--bg));border-right:1px solid var(--line);display:flex;flex-direction:column}
+  .brand{padding:22px 20px 18px;display:flex;align-items:center;gap:11px}
+  .brand .logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--teal2),var(--teal-deep));display:grid;place-items:center;font-size:17px;box-shadow:0 4px 14px rgba(28,192,164,.35)}
+  .brand b{font-size:14.5px;letter-spacing:-.01em} .brand span{display:block;font-size:11px;color:var(--faint);font-weight:400}
+  .nav{padding:8px 12px;flex:1}
+  .nav .lbl{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--faint);padding:12px 12px 6px;font-weight:700}
+  .nav a{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;color:var(--muted);cursor:pointer;font-weight:600;font-size:13.5px;margin-bottom:2px}
+  .nav a:hover{background:var(--panel2);color:var(--ink)} .nav a.active{background:var(--teal-ghost);color:var(--teal)}
+  .nav .ic{width:18px;text-align:center;font-size:15px}
+  .side .foot{padding:14px 18px;border-top:1px solid var(--line);font-size:12px;color:var(--faint);display:flex;align-items:center;gap:8px}
+
+  .main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+
+  /* topbar */
+  .topbar{position:sticky;top:0;z-index:8;background:rgba(10,15,14,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:0 30px;height:64px;display:flex;align-items:center;gap:14px;flex:none}
+  .topbar .crumb{color:var(--faint);cursor:pointer;font-size:20px;line-height:1}
+  .topbar h1{font-size:19px;font-weight:800;margin:0;letter-spacing:-.02em}
+  .topbar .spacer{flex:1}
+  .badge{font-size:10px;padding:3px 9px;border-radius:999px;font-weight:800;letter-spacing:.04em}
+  .badge.out{background:var(--teal-ghost);color:var(--teal)} .badge.in{background:rgba(224,177,85,.14);color:var(--amber)}
+  .badge.draft{background:rgba(147,168,162,.14);color:var(--muted)}
+
+  .btn-primary{background:linear-gradient(180deg,var(--teal2),var(--teal));color:#04211c;padding:10px 18px;box-shadow:0 4px 14px rgba(28,192,164,.28)}
+  .btn-primary:hover{filter:brightness(1.07);transform:translateY(-1px)}
+  .btn-ghost{background:transparent;border:1px solid var(--line2);color:var(--ink);padding:9px 15px}.btn-ghost:hover{background:var(--panel2);border-color:var(--teal)}
+  .btn-danger{background:transparent;border:1px solid rgba(226,102,74,.4);color:var(--danger);padding:9px 14px}.btn-danger:hover{background:rgba(226,102,74,.1)}
   .btn-sm{padding:7px 12px;font-size:12.5px}
-  .content{padding:24px 28px;max-width:820px}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin-bottom:16px}
-  .card h2{margin:0 0 4px;font-size:15px;font-weight:700} .card .desc{margin:0 0 16px;font-size:12.5px;color:var(--faint)}
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:16px} .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
-  .field{margin-bottom:14px} .field:last-child{margin-bottom:0}
-  textarea{min-height:200px;line-height:1.55;resize:vertical;font-size:13.5px}
-  .slider{display:flex;align-items:center;gap:12px} .slider input[type=range]{flex:1;accent-color:var(--teal);padding:0}
-  .slider .val{width:44px;text-align:right;font-family:Consolas,monospace;color:var(--teal);font-size:13px}
-  .seg{display:inline-flex;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px}
-  .seg button{padding:8px 18px;border-radius:8px;background:transparent;color:var(--muted);font-weight:700;font-size:13px}
-  .seg button.on-out{background:rgba(24,184,158,.18);color:var(--teal)} .seg button.on-in{background:rgba(214,169,74,.18);color:var(--amber)}
-  .tool{border:1px solid var(--line);border-radius:11px;padding:15px;margin-bottom:12px;background:var(--bg)}
-  .tool .th{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-  .tool .builtin{font-size:11px;color:var(--amber);font-family:Consolas,monospace}
-  .chk{display:flex;gap:8px;align-items:center;margin:0;font-size:13px;color:var(--ink)} .chk input{width:auto}
-  .overlay{position:fixed;inset:0;background:rgba(4,8,7,.72);display:none;align-items:center;justify-content:center;z-index:30} .overlay.show{display:flex}
-  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:28px;max-width:560px;width:92%}
-  .modal h2{margin:0 0 6px;font-size:20px} .modal p{margin:0 0 20px;color:var(--muted);font-size:13.5px}
+  .content{padding:28px 30px;flex:1}
+
+  /* assistant list */
+  .listwrap{max-width:920px}
+  .listrow{display:flex;align-items:center;gap:16px;padding:16px 18px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);margin-bottom:10px;cursor:pointer;transition:.14s}
+  .listrow:hover{border-color:var(--teal);background:var(--panel2);transform:translateY(-1px)}
+  .listrow .avatar{width:40px;height:40px;border-radius:11px;background:var(--raise);display:grid;place-items:center;font-size:18px;flex:none}
+  .listrow .nm{font-weight:700;font-size:15px;letter-spacing:-.01em} .listrow .meta{font-size:12px;color:var(--faint);font-family:"Cascadia Code",Consolas,monospace;margin-top:3px}
+  .listrow .chev{color:var(--faint);font-size:18px}
+  .empty{text-align:center;padding:72px 20px;color:var(--faint);max-width:520px;margin:0 auto}.empty .big{font-size:52px;margin-bottom:14px;opacity:.8}.empty h3{color:var(--ink);margin:0 0 6px;font-size:18px}
+
+  /* editor 2-pane */
+  .tabs{display:flex;gap:2px;padding:0 30px;border-bottom:1px solid var(--line);background:var(--bg);position:sticky;top:64px;z-index:7;overflow-x:auto;flex:none}
+  .tabs button{background:transparent;color:var(--muted);padding:14px 16px;border-radius:0;border-bottom:2px solid transparent;font-size:13.5px;white-space:nowrap;display:flex;gap:7px;align-items:center}
+  .tabs button:hover{color:var(--ink)} .tabs button.on{color:var(--teal);border-bottom-color:var(--teal)}
+  .egrid{display:grid;grid-template-columns:1fr 330px;gap:0;flex:1;min-height:0}
+  .ecol{padding:26px 30px;overflow-y:auto;max-width:760px}
+  .erail{border-left:1px solid var(--line);background:var(--panel);padding:24px 22px;overflow-y:auto}
+  .erail .rname{font-size:17px;font-weight:800;letter-spacing:-.01em;margin:2px 0 10px;word-break:break-word}
+  .summary{display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:16px 0}
+  .summary .r{display:flex;justify-content:space-between;gap:10px;padding:11px 13px;background:var(--panel);font-size:12.5px}
+  .summary .r .k{color:var(--faint)} .summary .r .val{font-family:"Cascadia Code",Consolas,monospace;color:var(--ink);text-align:right;word-break:break-all}
+  .est{background:var(--teal-ghost);border:1px solid var(--line2);border-radius:12px;padding:13px 15px;margin-bottom:16px}
+  .est .n{font-size:20px;font-weight:800;color:var(--teal);font-family:"Cascadia Code",Consolas,monospace} .est .l{font-size:11px;color:var(--muted)}
+  .rail-actions{display:flex;flex-direction:column;gap:9px}
+  .rail-actions button{width:100%;padding:11px}
+  .btn-test{background:var(--raise);border:1px solid var(--line2);color:var(--ink)}.btn-test:hover{border-color:var(--teal);color:var(--teal)}
+
+  /* cards & forms */
+  .sec{margin-bottom:28px}
+  .sec-h{margin:0 0 3px;font-size:15px;font-weight:700;letter-spacing:-.01em}
+  .sec-d{margin:0 0 16px;font-size:12.5px;color:var(--faint);line-height:1.5}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:20px 22px;box-shadow:var(--sh)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:16px}.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+  .field{margin-bottom:16px}.field:last-child{margin-bottom:0}
+  textarea.prompt{min-height:380px;line-height:1.6;font-size:13px;resize:vertical}
+  .slider{display:flex;align-items:center;gap:14px}.slider input[type=range]{flex:1;accent-color:var(--teal)}
+  .slider .val{width:48px;text-align:right;font-family:"Cascadia Code",Consolas,monospace;color:var(--teal);font-size:13px}
+  .seg{display:inline-flex;background:var(--bg);border:1px solid var(--line2);border-radius:11px;padding:3px;gap:3px}
+  .seg button{padding:9px 20px;border-radius:8px;background:transparent;color:var(--muted);font-weight:700;font-size:13px}
+  .seg button.on-out{background:var(--teal-ghost);color:var(--teal)}.seg button.on-in{background:rgba(224,177,85,.18);color:var(--amber)}
+  .tool{border:1px solid var(--line2);border-radius:12px;padding:16px;margin-bottom:12px;background:var(--bg)}
+  .tool .th{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .builtin{font-size:11px;color:var(--amber);font-family:Consolas,monospace}
+  .chk{display:flex;gap:8px;align-items:center;margin:0;font-size:13px;color:var(--ink);text-transform:none;letter-spacing:0}.chk input{width:auto}
+  .drop{border:1.5px dashed var(--line2);border-radius:12px;padding:34px;text-align:center;color:var(--muted);cursor:pointer;transition:.14s}.drop:hover{border-color:var(--teal);color:var(--teal);background:var(--panel2)}
+  .filelist{margin-top:14px;display:flex;flex-direction:column;gap:8px}
+  .fileitem{display:flex;align-items:center;gap:11px;padding:11px 14px;background:var(--bg);border:1px solid var(--line2);border-radius:10px;font-size:13px}
+  .fileitem .fn{flex:1}.fileitem .sz{color:var(--faint);font-family:Consolas,monospace;font-size:12px}
+  .pill{font-size:10px;padding:2px 8px;border-radius:999px;background:var(--panel2);color:var(--amber);border:1px solid var(--line2)}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{text-align:left;color:var(--faint);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;padding:13px 16px;border-bottom:1px solid var(--line)}
+  td{padding:14px 16px;border-bottom:1px solid var(--line)}tr:last-child td{border-bottom:none}
+  .tablecard{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh)}
+
+  .overlay{position:fixed;inset:0;background:rgba(3,6,5,.78);display:none;align-items:center;justify-content:center;z-index:30;backdrop-filter:blur(3px)}.overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line2);border-radius:18px;padding:30px;max-width:580px;width:92%;box-shadow:var(--sh)}
+  .modal h2{margin:0 0 6px;font-size:21px;letter-spacing:-.01em}.modal p{margin:0 0 22px;color:var(--muted);font-size:13.5px}
   .choices{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-  .choice{border:1px solid var(--line);border-radius:14px;padding:20px;cursor:pointer;transition:.15s;text-align:center}
-  .choice:hover{border-color:var(--teal);background:var(--panel2);transform:translateY(-2px)}
-  .choice .ic{font-size:30px} .choice .t{font-weight:700;margin:8px 0 4px} .choice .d{font-size:12px;color:var(--faint)}
-  .modal .cancel{margin-top:18px;background:transparent;color:var(--muted);border:1px solid var(--line);padding:9px 16px}
-  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--good);color:#04241a;padding:11px 22px;border-radius:10px;font-weight:700;transition:transform .3s;z-index:40}
-  .toast.show{transform:translateX(-50%) translateY(0)} .toast.err{background:var(--danger);color:#2a0f08}
+  .choice{border:1px solid var(--line2);border-radius:15px;padding:24px;cursor:pointer;transition:.15s;text-align:center}
+  .choice:hover{border-color:var(--teal);background:var(--panel2);transform:translateY(-3px)}
+  .choice .ic{font-size:32px}.choice .t{font-weight:700;margin:10px 0 5px}.choice .d{font-size:12px;color:var(--faint);line-height:1.5}
+  .modal .cancel{margin-top:18px;background:transparent;color:var(--muted);border:1px solid var(--line2);padding:9px 16px}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(90px);background:var(--good);color:#042018;padding:12px 24px;border-radius:11px;font-weight:700;transition:transform .3s;z-index:40;box-shadow:var(--sh)}.toast.show{transform:translateX(-50%) translateY(0)}.toast.err{background:var(--danger);color:#2a0f08}
 </style>
 </head>
 <body>
   <aside class="side">
-    <div class="top"><h1>HQ Lead Engine</h1><p>Assistant Manager</p></div>
-    <button class="newbtn" id="newBtn">+ New Assistant</button>
-    <div class="list" id="list"></div>
+    <div class="brand"><div class="logo">🎙</div><div><b>HQ Lead Engine</b><span>Voice AI platform</span></div></div>
+    <nav class="nav" id="nav">
+      <div class="lbl">Build</div>
+      <a data-sec="assistants" class="active"><span class="ic">🤖</span> Assistants</a>
+      <a data-sec="tools"><span class="ic">🛠</span> Tools</a>
+      <a data-sec="knowledge"><span class="ic">📚</span> Knowledge Base</a>
+      <div class="lbl">Monitor</div>
+      <a data-sec="calls"><span class="ic">📞</span> Call Logs</a>
+    </nav>
+    <div class="foot">🔒 Login &amp; teams — coming soon</div>
   </aside>
-  <main class="main" id="main">
-    <div class="empty" id="empty"><div style="font-size:40px">🎙️</div><div>Select an assistant, or create a new one.</div></div>
-    <div id="editor" style="display:none"></div>
-  </main>
+  <main class="main" id="main"></main>
+
   <div class="overlay" id="overlay"><div class="modal">
-    <h2>New assistant</h2><p>What are you building? This sets up the right fields and flow.</p>
+    <h2>Create a new assistant</h2><p>What kind of agent are you building? We'll tailor the setup.</p>
     <div class="choices">
       <div class="choice" data-type="outbound"><div class="ic">📤</div><div class="t">Outbound</div><div class="d">Your agent <b>calls leads</b> — pitch, qualify, hand off.</div></div>
       <div class="choice" data-type="inbound"><div class="ic">📥</div><div class="t">Inbound</div><div class="d">Leads <b>call your agent</b> — answer, help, enroll.</div></div>
     </div>
     <button class="cancel" id="cancelNew">Cancel</button>
   </div></div>
+  <div class="overlay" id="tOverlay"><div class="modal" style="max-width:660px">
+    <h2 id="tTitle">Transcript</h2>
+    <div id="tBody" style="max-height:58vh;overflow:auto;white-space:pre-wrap;font-size:13px;line-height:1.7;color:var(--muted);background:var(--bg);border:1px solid var(--line2);border-radius:12px;padding:16px"></div>
+    <button class="cancel" onclick="document.getElementById('tOverlay').classList.remove('show')" style="margin-top:16px">Close</button>
+  </div></div>
   <div class="toast" id="toast"></div>
 
 <script>
 let OPTIONS={llm:{openai:["gpt-4.1"]},stt:{deepgram:["nova-3"]},tts:{elevenlabs:["eleven_flash_v2_5"]}};
-let state={list:[],current:null,isNew:false};
-const $=(id)=>document.getElementById(id);
+let S={section:"assistants",list:[],current:null,isNew:false,tab:"model"};
+const $=id=>document.getElementById(id);
 function toast(m,e){const t=$("toast");t.textContent=m;t.className="toast show"+(e?" err":"");setTimeout(()=>t.className="toast"+(e?" err":""),2400);}
 async function api(p,o){const r=await fetch(p,o);if(!r.ok)throw new Error((await r.text())||r.status);return r.status===204?null:r.json();}
 function esc(s){return (s||"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
 function escA(s){return (s||"").replace(/"/g,"&quot;").replace(/</g,"&lt;");}
 function opts(a,sel){return (a||[]).map(v=>`<option ${v===sel?"selected":""}>${v}</option>`).join("");}
+function fmtSize(n){return n>1e6?(n/1e6).toFixed(1)+" MB":n>1e3?(n/1e3).toFixed(0)+" KB":n+" B";}
 
 async function boot(){ try{OPTIONS=await api("/api/options");}catch(e){}
-  $("newBtn").onclick=()=>$("overlay").classList.add("show");
+  document.querySelectorAll("#nav a").forEach(a=>a.onclick=()=>go(a.dataset.sec));
   $("cancelNew").onclick=()=>$("overlay").classList.remove("show");
   document.querySelectorAll(".choice").forEach(c=>c.onclick=()=>createWithType(c.dataset.type));
-  await loadList();
+  await loadList(); go("assistants");
 }
-async function loadList(){ state.list=await api("/api/assistants"); const el=$("list"); el.innerHTML="";
-  state.list.forEach(a=>{ const t=(a.type||"outbound"); const d=document.createElement("div");
-    d.className="item"+(state.current&&state.current.id===a.id&&!state.isNew?" active":"");
-    d.innerHTML=`<div class="nm"><span class="nmtxt"></span><span class="badge ${t==='inbound'?'in':'out'}">${t==='inbound'?'IN':'OUT'}</span></div><div class="meta">${a.llm||"—"} · ${(a.voice||"").slice(0,10)||"—"}</div>`;
-    d.querySelector(".nmtxt").textContent=a.name||a.id; d.onclick=()=>select(a.id); el.appendChild(d); });
+function go(sec){ S.section=sec; S.current=null; S.isNew=false;
+  document.querySelectorAll("#nav a").forEach(a=>a.classList.toggle("active",a.dataset.sec===sec)); render(); }
+async function loadList(){ S.list=await api("/api/assistants"); }
+function topbar(title,actionsHtml,crumb){ return `<div class="topbar">${crumb?`<span class="crumb" onclick="backToList()">←</span>`:""}<h1>${title}</h1><span class="spacer"></span>${actionsHtml||""}</div>`; }
+
+function render(){ const m=$("main");
+  if(S.current) return renderEditor(m);
+  if(S.section==="assistants") return renderAssistants(m);
+  if(S.section==="tools") return renderLaunch(m,"Tools","Tools let agents take actions mid-call (send a link, book, end call) via n8n webhooks — managed inside each assistant.","tools");
+  if(S.section==="knowledge") return renderLaunch(m,"Knowledge Base","Upload PDFs/docs per assistant so it can answer from them. (Indexing & retrieval is the next build.)","knowledge");
+  if(S.section==="calls") return renderCalls(m);
 }
-async function select(id){ state.current=await api("/api/assistants/"+id); state.isNew=false; renderEditor(); loadList(); }
+
+function renderAssistants(m){
+  const rows=S.list.map(a=>{const t=a.type||"outbound";return `<div class="listrow" onclick="openAssistant('${a.id}')">
+    <div class="avatar">${t==='inbound'?'📥':'📤'}</div>
+    <div style="flex:1"><div class="nm">${esc(a.name||a.id)}</div><div class="meta">${a.llm||"—"} · ${(a.voice||"").slice(0,14)||"no voice"}</div></div>
+    <span class="badge ${t==='inbound'?'in':'out'}">${t.toUpperCase()}</span><span class="chev">›</span></div>`;}).join("");
+  m.innerHTML=topbar("Assistants",`<button class="btn-primary" onclick="newAssistant()">+ Create Assistant</button>`)+
+    `<div class="content"><div class="listwrap">${ S.list.length ? rows :
+      `<div class="empty"><div class="big">🤖</div><h3>No assistants yet</h3><div>Create your first voice agent — pick a type, choose models, write the prompt. Takes a couple minutes.</div><br><button class="btn-primary" onclick="newAssistant()">+ Create Assistant</button></div>`}</div></div>`;
+}
+window.newAssistant=()=>$("overlay").classList.add("show");
+window.openAssistant=async(id)=>{ S.current=await api("/api/assistants/"+id); S.isNew=false; S.tab="model"; render(); };
+window.backToList=()=>{ S.current=null; S.section="assistants"; document.querySelectorAll("#nav a").forEach(a=>a.classList.toggle("active",a.dataset.sec==="assistants")); render(); };
 async function createWithType(type){ $("overlay").classList.remove("show"); const d=await api("/api/defaults?type="+type);
-  state.current={id:null,config:d.config,prompt:d.prompt}; state.isNew=true; renderEditor(); loadList(); }
+  S.current={id:null,config:d.config,prompt:d.prompt}; S.isNew=true; S.tab="model"; render(); }
 
-function sl(id,label,val,min=0,max=1){return `<div class="field"><label>${label}</label><div class="slider"><input type="range" id="${id}" min="${min}" max="${max}" step="0.05" value="${val}"><span class="val" id="${id}_val"></span></div></div>`;}
-
-function toolsCard(c){
-  const tools=c.tools||[];
-  const blocks=tools.map((t,i)=>{
-    const builtin = t.name==="end_call";
-    return `<div class="tool">
-      <div class="th">
-        <input id="tool_${i}_name" value="${escA(t.name||"")}" style="max-width:280px;font-weight:600" ${builtin?"readonly":""}>
-        <button class="btn-danger btn-sm" onclick="removeTool(${i})">Remove</button>
-      </div>
-      <div class="field"><label>When the assistant should use it (description)</label><input id="tool_${i}_desc" value="${escA(t.description||"")}"></div>
-      ${builtin
-        ? `<div class="builtin">built-in — ends the call (no webhook)</div>`
-        : `<div class="field"><label>n8n webhook URL</label><input id="tool_${i}_url" value="${escA(t.webhook_url||"")}" placeholder="https://your-n8n/webhook/..."></div>`}
-      <label class="chk"><input type="checkbox" id="tool_${i}_enabled" ${t.enabled!==false?"checked":""}> Enabled</label>
-    </div>`;
-  }).join("");
-  return `<div class="card"><h2>Tools</h2>
-    <p class="desc">Actions the assistant can take mid-call — each calls an n8n webhook (like your send-enrollment-link / advisor-link tools). The model decides when to use them from the description.</p>
-    ${blocks}
-    <button class="btn-ghost btn-sm" onclick="addTool()">+ Add tool</button></div>`;
+const TABS=[["model","⚙ Model"],["voice","🎚 Voice"],["prompt","📝 Prompt"],["tools","🛠 Tools"],["knowledge","📚 Knowledge"],["advanced","⚡ Advanced"]];
+function estCost(c){ const t=c.llm?.model||""; const base=0.03; const llm=/mini|nano|4o-mini/.test(t)?0.006:(/gpt-5/.test(t)?0.03:0.012); return (base+llm).toFixed(2); }
+function renderEditor(m){
+  const c=S.current.config, type=c.type||"outbound", tts=c.tts||{},llm=c.llm||{},stt=c.stt||{};
+  m.innerHTML=
+    topbar(`<span id="barName">${esc(c.name||"New Assistant")}</span>`,
+      `<span class="badge ${S.isNew?'draft':(type==='inbound'?'in':'out')}">${S.isNew?'DRAFT':type.toUpperCase()}</span>`, true)+
+    `<div class="tabs">${TABS.map(([k,l])=>`<button class="${S.tab===k?'on':''}" onclick="switchTab('${k}')">${l}</button>`).join("")}</div>
+     <div class="egrid">
+       <div class="ecol" id="ecol">${tabBody(S.tab,c)}</div>
+       <aside class="erail">
+         <div class="eyebrow">Assistant</div>
+         <div class="rname" id="railName">${esc(c.name||"New Assistant")}</div>
+         <span class="badge ${type==='inbound'?'in':'out'}">${type.toUpperCase()}</span>
+         <div class="est" style="margin-top:16px"><div class="n">~$${estCost(c)}<span style="font-size:12px">/min</span></div><div class="l">estimated voice cost</div></div>
+         <div class="summary">
+           <div class="r"><span class="k">Transcriber</span><span class="val">${esc(stt.model||"nova-3")}</span></div>
+           <div class="r"><span class="k">LLM</span><span class="val">${esc(llm.model||"gpt-4.1")}</span></div>
+           <div class="r"><span class="k">Voice model</span><span class="val">${esc(tts.model||"—")}</span></div>
+           <div class="r"><span class="k">Voice ID</span><span class="val">${esc((tts.voice_id||"—").slice(0,16))}</span></div>
+           <div class="r"><span class="k">Tools</span><span class="val">${(c.tools||[]).filter(t=>t.enabled!==false).length}</span></div>
+         </div>
+         <div class="rail-actions">
+           <button class="btn-primary" onclick="save()">${S.isNew?"Create assistant":"Save changes"}</button>
+           <button class="btn-test" onclick="window.open('http://localhost:8000','_blank')">▶ Talk to test</button>
+           ${S.isNew?"":'<button class="btn-danger" onclick="del()">Delete</button>'}
+         </div>
+       </aside>
+     </div>`;
+  wireTab(c);
 }
-function retryCard(d){
-  return `<div class="card"><h2>Retry &amp; dialing <span class="builtin">outbound</span></h2>
-    <p class="desc">How the n8n dialer paces calls: initial delay after a lead comes in, retry ladder for no-answers, and how many calls run at once.</p>
-    <div class="row3">
-      <div class="field"><label>Initial delay (min)</label><input type="number" id="d_initial" value="${d.initial_delay_min??10}"></div>
-      <div class="field"><label>Max attempts</label><input type="number" id="d_attempts" value="${d.max_attempts??3}"></div>
-      <div class="field"><label>Retry interval (min)</label><input type="number" id="d_retry" value="${d.retry_interval_min??60}"></div>
-    </div>
-    <div class="row">
-      <div class="field"><label>Concurrent calls (pool)</label><input type="number" id="d_pool" value="${d.pool_size??3}"></div>
-      <div class="field"><label>Business hours (local)</label><input id="d_hours" value="${escA(d.business_hours||"09:00-19:00")}"></div>
-    </div></div>`;
+window.switchTab=(t)=>{ persist(); S.tab=t; renderEditor($("main")); };
+function wireTab(c){ const b=$("ecol");
+  b.querySelectorAll("input[type=range]").forEach(r=>{const o=b.querySelector("#"+r.id+"_val");const u=()=>o.textContent=(+r.value).toFixed(2);r.addEventListener("input",u);u();});
+  if($("f_name"))$("f_name").addEventListener("input",e=>{$("barName").textContent=e.target.value||"New Assistant";$("railName").textContent=e.target.value||"New Assistant";});
+  if(S.tab==="knowledge") loadKB();
 }
-function integrationsCard(ig,type){
-  const crm=ig.suitecrm||{};
-  return `<div class="card"><h2>n8n &amp; SuiteCRM</h2>
-    <p class="desc">Where call outcomes are posted (n8n Result Handler → SuiteCRM), and the CRM the leads live in.</p>
-    <div class="field"><label>n8n result webhook (call outcome → transcript, status update)</label><input id="i_result" value="${escA(ig.result_webhook_url||"")}" placeholder="https://your-n8n/webhook/result-handler"></div>
-    <div class="row3">
-      <div class="field"><label>SuiteCRM base URL</label><input id="i_crm_base" value="${escA(crm.base_url||"")}" placeholder="https://crmga.com"></div>
-      <div class="field"><label>Module</label><input id="i_crm_module" value="${escA(crm.module||"GA_HQ_Students")}"></div>
-      <div class="field"><label>Status field</label><input id="i_crm_status" value="${escA(crm.status_field||"status")}"></div>
-    </div>
-    <div class="field"><label>${type==='outbound'?'Call from number (Telnyx) — next phase':'Receive on number (Telnyx) — next phase'}</label><input placeholder="(Phase 2 — telephony)" disabled></div></div>`;
-}
-
-function renderEditor(){
-  $("empty").style.display="none";
-  const c=state.current.config, ed=$("editor"); ed.style.display="block";
+function tabBody(tab,c){
   const tts=c.tts||{},llm=c.llm||{},stt=c.stt||{},type=c.type||"outbound";
-  const greetLabel=type==="outbound"?"Opening line — what the agent says first when the lead picks up":"Greeting — how the agent answers when someone calls in";
-  ed.innerHTML=`
-  <div class="bar">
-    <div class="title" id="barName">${esc(c.name||"New Assistant")}</div>
-    ${state.isNew?'<span class="id">unsaved</span>':`<span class="id">${state.current.id}</span>`}
-    <button class="btn-ghost" id="testBtn">▶ Test</button>
-    ${state.isNew?"":'<button class="btn-danger" id="delBtn">Delete</button>'}
-    <button class="btn-save" id="saveBtn">${state.isNew?"Create":"Save"}</button>
-  </div>
-  <div class="content">
-    <div class="card"><h2>Type &amp; identity</h2>
-      <div class="field"><label>Assistant type</label><div class="seg">
-        <button id="seg_out" class="${type==='outbound'?'on-out':''}">📤 Outbound</button>
-        <button id="seg_in" class="${type==='inbound'?'on-in':''}">📥 Inbound</button></div></div>
-      <div class="row">
-        <div class="field"><label>Assistant name</label><input id="f_name" value="${escA(c.name||"")}"></div>
-        <div class="field"><label>${greetLabel}</label><input id="f_greeting" value="${escA(c.greeting||"")}"></div>
-      </div></div>
-    <div class="card"><h2>Model</h2><p class="desc">OpenAI. mini/4o are fastest for live voice; gpt-5 is smartest but slower.</p>
-      <div class="row"><div class="field"><label>Provider</label><select disabled><option>OpenAI</option></select></div>
-      <div class="field"><label>Model</label><select id="f_llm">${opts(OPTIONS.llm.openai,llm.model)}</select></div></div></div>
-    <div class="card"><h2>Transcriber</h2><p class="desc">Deepgram. “phonecall” models are tuned for phone audio.</p>
-      <div class="row"><div class="field"><label>Provider</label><select disabled><option>Deepgram</option></select></div>
-      <div class="field"><label>Model</label><select id="f_stt">${opts(OPTIONS.stt.deepgram,stt.model)}</select></div></div></div>
-    <div class="card"><h2>Voice</h2><p class="desc">ElevenLabs. Change the voice ID (from your library), model, and delivery — lower stability = more expressive, speed &lt; 1 = slower.</p>
-      <div class="row"><div class="field"><label>Voice ID</label><input id="f_voice" value="${escA(tts.voice_id||"")}"></div>
-      <div class="field"><label>Model</label><select id="f_ttsmodel">${opts(OPTIONS.tts.elevenlabs,tts.model)}</select></div></div>
-      ${sl("f_stability","Stability",tts.stability??0.4)}${sl("f_similarity","Similarity boost",tts.similarity_boost??0.8)}
-      ${sl("f_style","Style",tts.style??0.3)}${sl("f_speed","Speed",tts.speed??0.9,0.7,1.2)}</div>
-    <div class="card"><h2>System prompt</h2><p class="desc">Who the assistant is and how it talks — humanness + business logic.</p>
-      <textarea id="f_prompt">${esc(state.current.prompt||"")}</textarea></div>
-    <div class="card"><h2>Advanced</h2>${sl("f_vad","End-of-speech wait (sec) — lower = snappier",c.vad_stop_secs??0.5,0.2,1.2)}</div>
-    ${toolsCard(c)}
-    ${type==='outbound'?retryCard(c.dialing||{}):""}
-    ${integrationsCard(c.integrations||{},type)}
-  </div>`;
-  ed.querySelectorAll("input[type=range]").forEach(r=>{const o=ed.querySelector("#"+r.id+"_val");const u=()=>o.textContent=(+r.value).toFixed(2);r.addEventListener("input",u);u();});
-  $("f_name").addEventListener("input",e=>$("barName").textContent=e.target.value||"New Assistant");
-  $("seg_out").onclick=()=>switchType("outbound"); $("seg_in").onclick=()=>switchType("inbound");
-  $("saveBtn").onclick=save; $("testBtn").onclick=()=>window.open("http://localhost:8000","_blank");
-  if($("delBtn"))$("delBtn").onclick=del;
+  if(tab==="model") return `
+    <div class="sec"><div class="eyebrow">Identity</div><h2 class="sec-h">Type &amp; name</h2><p class="sec-d">Outbound calls out to leads; inbound answers calls coming in.</p>
+      <div class="card"><div class="field"><label>Assistant type</label><div class="seg">
+        <button class="${type==='outbound'?'on-out':''}" onclick="switchType('outbound')">📤 Outbound</button>
+        <button class="${type==='inbound'?'on-in':''}" onclick="switchType('inbound')">📥 Inbound</button></div></div>
+        <div class="field"><label>Name</label><input id="f_name" value="${escA(c.name||"")}" placeholder="e.g. HQ Sales Closer"></div></div></div>
+    <div class="sec"><div class="eyebrow">Pipeline</div><h2 class="sec-h">Models</h2><p class="sec-d">Provider is fixed per layer — pick the model that fits.</p>
+      <div class="card">
+        <div class="field"><label>Transcriber · Deepgram</label><select id="f_stt">${opts(OPTIONS.stt.deepgram,stt.model)}</select><p class="hint">"phonecall" models are tuned for phone audio.</p></div>
+        <div class="field"><label>LLM · OpenAI</label><select id="f_llm">${opts(OPTIONS.llm.openai,llm.model)}</select><p class="hint">mini / 4o = fastest for live voice; gpt-5 = smartest but slower.</p></div>
+        <div class="row"><div class="field"><label>Voice ID · ElevenLabs</label><input id="f_voice" value="${escA(tts.voice_id||"")}"></div>
+        <div class="field"><label>Voice model</label><select id="f_ttsmodel">${opts(OPTIONS.tts.elevenlabs,tts.model)}</select></div></div></div></div>`;
+  if(tab==="voice") return `
+    <div class="sec"><div class="eyebrow">Humanizer</div><h2 class="sec-h">How human she sounds</h2><p class="sec-d">Small changes make a big difference — tune and re-test.</p>
+      <div class="card">
+        ${sl("f_speed","Speed — 0.7 slow · 1.2 fast",tts.speed??0.9,0.7,1.2)}
+        ${sl("f_stability","Stability — low = expressive, high = steady",tts.stability??0.4)}
+        ${sl("f_style","Style — liveliness & character",tts.style??0.3)}
+        ${sl("f_similarity","Similarity boost — closeness to source voice",tts.similarity_boost??0.8)}</div></div>
+    <div class="sec"><div class="eyebrow">Turn-taking</div><h2 class="sec-h">Responsiveness</h2><p class="sec-d">How quickly she replies after you stop.</p>
+      <div class="card">${sl("f_vad","End-of-speech wait (sec) — lower = snappier",c.vad_stop_secs??0.5,0.2,1.2)}</div></div>`;
+  if(tab==="prompt"){ const g=type==='outbound'?"Opening line (she speaks first)":"Greeting (how she answers)"; return `
+    <div class="sec"><div class="eyebrow">First message</div><h2 class="sec-h">${g}</h2>
+      <div class="card"><div class="field"><input id="f_greeting" value="${escA(c.greeting||"")}"></div></div></div>
+    <div class="sec"><div class="eyebrow">Behavior</div><h2 class="sec-h">System prompt</h2><p class="sec-d">Personality, rules, business facts — how she talks and sells.</p>
+      <div class="card"><textarea class="prompt" id="f_prompt">${esc(S.current.prompt||"")}</textarea></div></div>`;}
+  if(tab==="tools"){ const tools=c.tools||[];
+    const blocks=tools.map((t,i)=>{const bi=t.name==="end_call";return `<div class="tool">
+      <div class="th"><input id="tool_${i}_name" value="${escA(t.name||"")}" style="max-width:280px;font-weight:600" ${bi?"readonly":""}><button class="btn-danger btn-sm" onclick="removeTool(${i})">Remove</button></div>
+      <div class="field"><label>When the agent should use it</label><input id="tool_${i}_desc" value="${escA(t.description||"")}"></div>
+      ${bi?`<div class="builtin">built-in — ends the call</div>`:`<div class="field"><label>n8n webhook URL</label><input id="tool_${i}_url" value="${escA(t.webhook_url||"")}" placeholder="https://your-n8n/webhook/..."></div>`}
+      <label class="chk"><input type="checkbox" id="tool_${i}_enabled" ${t.enabled!==false?"checked":""}> Enabled</label></div>`;}).join("");
+    return `<div class="sec"><div class="eyebrow">Actions</div><h2 class="sec-h">Tools</h2><p class="sec-d">Mid-call actions via n8n webhooks. The model decides when, from your description.</p>
+      <div class="card">${blocks}<button class="btn-ghost btn-sm" onclick="addTool()">+ Add tool</button></div></div>`;}
+  if(tab==="knowledge") return `<div class="sec"><div class="eyebrow">Grounding</div><h2 class="sec-h">Knowledge base</h2><p class="sec-d">Upload PDFs/docs about your program — indexed automatically, and the agent looks up answers from them mid-call.</p>
+      <div class="card"><div class="drop" onclick="document.getElementById('kbfile').click()">📄 &nbsp;Click to upload a PDF or document<div class="hint">PDF · DOCX · TXT — indexed on upload</div></div>
+      <input type="file" id="kbfile" style="display:none" onchange="uploadKB(this)">
+      <div id="kbstatus" style="margin-top:14px"></div>
+      <div class="filelist" id="kblist"><div class="hint">Loading…</div></div></div></div>`;
+  if(tab==="advanced"){ const d=c.dialing||{},ig=c.integrations||{},crm=ig.suitecrm||{}; return `
+    ${type==='outbound'?`<div class="sec"><div class="eyebrow">Dialer</div><h2 class="sec-h">Retry &amp; pacing</h2><p class="sec-d">How the outbound dialer paces calls.</p>
+      <div class="card"><div class="row3"><div class="field"><label>Initial delay (min)</label><input type="number" id="d_initial" value="${d.initial_delay_min??10}"></div>
+      <div class="field"><label>Max attempts</label><input type="number" id="d_attempts" value="${d.max_attempts??3}"></div>
+      <div class="field"><label>Retry interval (min)</label><input type="number" id="d_retry" value="${d.retry_interval_min??60}"></div></div>
+      <div class="row"><div class="field"><label>Concurrent (pool)</label><input type="number" id="d_pool" value="${d.pool_size??3}"></div>
+      <div class="field"><label>Business hours</label><input id="d_hours" value="${escA(d.business_hours||"09:00-19:00")}"></div></div></div></div>`:""}
+    <div class="sec"><div class="eyebrow">Integrations</div><h2 class="sec-h">n8n &amp; SuiteCRM</h2><p class="sec-d">Where outcomes post, and the CRM leads live in.</p>
+      <div class="card"><div class="field"><label>n8n result webhook</label><input id="i_result" value="${escA(ig.result_webhook_url||"")}" placeholder="https://your-n8n/webhook/result-handler"></div>
+      <div class="row3"><div class="field"><label>SuiteCRM base URL</label><input id="i_crm_base" value="${escA(crm.base_url||"")}"></div>
+      <div class="field"><label>Module</label><input id="i_crm_module" value="${escA(crm.module||"GA_HQ_Students")}"></div>
+      <div class="field"><label>Status field</label><input id="i_crm_status" value="${escA(crm.status_field||"status")}"></div></div></div></div>`;}
+  return "";
 }
-function switchType(t){const g=gather();state.current.config=g.config;state.current.prompt=g.prompt;state.current.config.type=t;renderEditor();}
-window.addTool=function(){const g=gather();state.current.config=g.config;state.current.prompt=g.prompt;
-  (state.current.config.tools=state.current.config.tools||[]).push({name:"new_tool",description:"",webhook_url:"",enabled:true,properties:{},required:[]});renderEditor();};
-window.removeTool=function(i){const g=gather();state.current.config=g.config;state.current.prompt=g.prompt;
-  state.current.config.tools.splice(i,1);renderEditor();};
+function sl(id,label,val,min=0,max=1){return `<div class="field"><label>${label}</label><div class="slider"><input type="range" id="${id}" min="${min}" max="${max}" step="0.05" value="${val}"><span class="val" id="${id}_val"></span></div></div>`;}
+window.switchType=(t)=>{ persist(); S.current.config.type=t; renderEditor($("main")); };
+window.addTool=()=>{ persist(); (S.current.config.tools=S.current.config.tools||[]).push({name:"new_tool",description:"",webhook_url:"",enabled:true,properties:{},required:[]}); S.tab="tools"; renderEditor($("main")); };
+window.removeTool=(i)=>{ persist(); S.current.config.tools.splice(i,1); renderEditor($("main")); };
+function v(id,fb){const e=$(id);return e?e.value:fb;} function chk(id,fb){const e=$(id);return e?e.checked:fb;}
+function persist(){ const g=gather(); S.current.config=g.config; S.current.prompt=g.prompt; }
+function gather(){ const c=S.current.config,tts=c.tts||{},llm=c.llm||{},stt=c.stt||{},d=c.dialing||{},ig=c.integrations||{},crm=ig.suitecrm||{};
+  const tools=(c.tools||[]).map((t,i)=>({name:v(`tool_${i}_name`,t.name),description:v(`tool_${i}_desc`,t.description),webhook_url:($(`tool_${i}_url`)?$(`tool_${i}_url`).value:(t.webhook_url||"")),enabled:chk(`tool_${i}_enabled`,t.enabled!==false),properties:t.properties||{},required:t.required||[]}));
+  return {config:{name:v("f_name",c.name)||"Untitled",type:c.type||"outbound",
+    stt:{provider:"deepgram",model:v("f_stt",stt.model||"nova-3")},llm:{provider:"openai",model:v("f_llm",llm.model||"gpt-4.1")},
+    tts:{provider:"elevenlabs",voice_id:v("f_voice",tts.voice_id||""),model:v("f_ttsmodel",tts.model||"eleven_flash_v2_5"),stability:+v("f_stability",tts.stability??0.4),similarity_boost:+v("f_similarity",tts.similarity_boost??0.8),style:+v("f_style",tts.style??0.3),speed:+v("f_speed",tts.speed??0.9)},
+    greeting:v("f_greeting",c.greeting||""),vad_stop_secs:+v("f_vad",c.vad_stop_secs??0.5),tools,
+    dialing:{initial_delay_min:+v("d_initial",d.initial_delay_min??10),max_attempts:+v("d_attempts",d.max_attempts??3),retry_interval_min:+v("d_retry",d.retry_interval_min??60),pool_size:+v("d_pool",d.pool_size??3),business_hours:v("d_hours",d.business_hours||"09:00-19:00")},
+    integrations:{result_webhook_url:v("i_result",ig.result_webhook_url||""),suitecrm:{base_url:v("i_crm_base",crm.base_url||""),module:v("i_crm_module",crm.module||"GA_HQ_Students"),status_field:v("i_crm_status",crm.status_field||"status")}},
+  },prompt:v("f_prompt",S.current.prompt||"")};
+}
+async function save(){ persist(); const p={config:S.current.config,prompt:S.current.prompt};
+  try{ if(S.isNew){const r=await api("/api/assistants",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(p)});S.current=r;S.isNew=false;toast("Assistant created 🎉");}
+    else{await api("/api/assistants/"+S.current.id,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(p)});toast("Saved — restart engine to apply to live calls");}
+    await loadList();renderEditor($("main"));
+  }catch(e){toast("Save failed: "+e.message,true);} }
+window.del=async()=>{ if(!confirm("Delete '"+S.current.id+"'?"))return; try{await api("/api/assistants/"+S.current.id,{method:"DELETE"});toast("Deleted");backToList();}catch(e){toast("Delete failed",true);} };
 
-function v(id,fb){const e=$(id);return e?e.value:fb;}
-function gather(){
-  const cfg=state.current.config;
-  const tools=(cfg.tools||[]).map((t,i)=>({
-    name:v(`tool_${i}_name`,t.name), description:v(`tool_${i}_desc`,t.description),
-    webhook_url:($(`tool_${i}_url`)?$(`tool_${i}_url`).value:(t.webhook_url||"")),
-    enabled:($(`tool_${i}_enabled`)?$(`tool_${i}_enabled`).checked:t.enabled!==false),
-    properties:t.properties||{}, required:t.required||[],
-  }));
-  const dialing = $("d_initial") ? {
-    initial_delay_min:+v("d_initial",10),max_attempts:+v("d_attempts",3),retry_interval_min:+v("d_retry",60),
-    pool_size:+v("d_pool",3),business_hours:v("d_hours","09:00-19:00"),
-  } : (cfg.dialing||{});
-  const integrations = {
-    result_webhook_url:v("i_result",(cfg.integrations||{}).result_webhook_url||""),
-    suitecrm:{ base_url:v("i_crm_base",""), module:v("i_crm_module","GA_HQ_Students"), status_field:v("i_crm_status","status") },
-  };
-  return { config:{
-    name:v("f_name","Untitled")||"Untitled", type:(cfg.type||"outbound"),
-    stt:{provider:"deepgram",model:v("f_stt","nova-3")},
-    llm:{provider:"openai",model:v("f_llm","gpt-4.1")},
-    tts:{provider:"elevenlabs",voice_id:v("f_voice",""),model:v("f_ttsmodel","eleven_flash_v2_5"),
-      stability:+v("f_stability",0.4),similarity_boost:+v("f_similarity",0.8),style:+v("f_style",0.3),speed:+v("f_speed",0.9)},
-    greeting:v("f_greeting",""), vad_stop_secs:+v("f_vad",0.5),
-    tools, dialing, integrations,
-  }, prompt:v("f_prompt","") };
+async function loadKB(){ if(!S.current||!S.current.id){$("kblist").innerHTML=`<div class="hint">Save the assistant first, then upload documents.</div>`;$("kbstatus").innerHTML="";return;}
+  try{const data=await api("/api/assistants/"+S.current.id+"/knowledge"); const files=data.files||[];
+    $("kbstatus").innerHTML = files.length?`<div style="display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--muted)"><span class="pill" style="${data.indexed?'color:var(--good);border-color:var(--good)':''}">${data.indexed?('✓ indexed · '+data.chunks+' passages'):'not indexed'}</span><button class="btn-ghost btn-sm" onclick="reindexKB()">Re-index</button></div>`:"";
+    $("kblist").innerHTML=files.length?files.map(f=>`<div class="fileitem"><span>📄</span><span class="fn">${esc(f.name)}</span><span class="sz">${fmtSize(f.size)}</span><button class="btn-danger btn-sm" onclick="delKB('${escA(f.name)}')">✕</button></div>`).join(""):`<div class="hint">No documents yet.</div>`;
+  }catch(e){$("kblist").innerHTML=`<div class="hint">Couldn't load.</div>`;} }
+window.uploadKB=async(inp)=>{ if(!S.current?.id){toast("Save the assistant first",true);return;} const f=inp.files[0];if(!f)return;const fd=new FormData();fd.append("file",f);
+  toast("Uploading & indexing…");
+  try{await fetch("/api/assistants/"+S.current.id+"/knowledge",{method:"POST",body:fd});toast("Uploaded & indexed ✓");loadKB();}catch(e){toast("Upload failed",true);} inp.value=""; };
+window.reindexKB=async()=>{ toast("Re-indexing…"); try{const s=await api("/api/assistants/"+S.current.id+"/knowledge/reindex",{method:"POST"});toast("Indexed "+s.chunks+" passages ✓");loadKB();}catch(e){toast("Re-index failed",true);} };
+window.delKB=async(name)=>{await api("/api/assistants/"+S.current.id+"/knowledge/"+encodeURIComponent(name),{method:"DELETE"});loadKB();};
+
+function renderLaunch(m,title,sub,tab){
+  const rows=S.list.map(a=>`<tr onclick="openTab('${a.id}','${tab}')" style="cursor:pointer"><td><b>${esc(a.name||a.id)}</b></td><td><span class="badge ${(a.type||'outbound')==='inbound'?'in':'out'}">${(a.type||'outbound').toUpperCase()}</span></td><td style="color:var(--faint)">Open →</td></tr>`).join("");
+  m.innerHTML=topbar(title)+`<div class="content"><div class="listwrap"><p class="sec-d">${sub}</p>
+    <div class="tablecard"><table><thead><tr><th>Assistant</th><th>Type</th><th></th></tr></thead><tbody>${rows||'<tr><td colspan=3 style="color:var(--faint)">No assistants yet.</td></tr>'}</tbody></table></div></div></div>`;
 }
-async function save(){const b=$("saveBtn");b.disabled=true;
-  try{const p=gather();
-    if(state.isNew){const r=await api("/api/assistants",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(p)});state.current=r;state.isNew=false;toast("Assistant created");}
-    else{await api("/api/assistants/"+state.current.id,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(p)});toast("Saved — restart engine to apply to live calls");}
-    await loadList();renderEditor();
-  }catch(e){toast("Save failed: "+e.message,true);} b.disabled=false;}
-async function del(){if(!confirm("Delete '"+state.current.id+"'? Can't be undone."))return;
-  try{await api("/api/assistants/"+state.current.id,{method:"DELETE"});toast("Deleted");state.current=null;$("editor").style.display="none";$("empty").style.display="flex";await loadList();}catch(e){toast("Delete failed: "+e.message,true);}}
+window.openTab=async(id,tab)=>{S.current=await api("/api/assistants/"+id);S.isNew=false;S.tab=tab;render();};
+async function renderCalls(m){ m.innerHTML=topbar("Call Logs")+`<div class="content"><div class="listwrap"><p class="sec-d">Transcripts, duration and outcomes from your agents' calls — click a row to read the transcript.</p><div id="cb"><div class="hint">Loading…</div></div></div></div>`;
+  try{const calls=await api("/api/calls"); S.calls=calls;
+    $("cb").innerHTML=calls.length?`<div class="tablecard"><table><thead><tr><th>Time</th><th>Assistant</th><th>Direction</th><th>Duration</th><th>Turns</th><th>Outcome</th></tr></thead><tbody>${calls.map((c,i)=>`<tr style="cursor:pointer" onclick="showTranscript(${i})"><td>${esc(c.time||"—")}</td><td>${esc(c.assistant||"—")}</td><td><span class="badge ${(c.direction||'outbound')==='inbound'?'in':'out'}">${(c.direction||'—').toUpperCase()}</span></td><td>${esc(c.duration||"—")}</td><td>${esc(String(c.turns??"—"))}</td><td>${esc(c.outcome||"—")}</td></tr>`).join("")}</tbody></table></div>`:`<div class="empty"><div class="big">📞</div><h3>No calls yet</h3><div>Once your agents start talking, every call shows up here with its transcript and outcome.</div></div>`;
+  }catch(e){$("cb").innerHTML=`<div class="empty">Couldn't load calls.</div>`;} }
+window.showTranscript=(i)=>{ const c=(S.calls||[])[i]; if(!c)return; $("tTitle").textContent=(c.assistant||"Call")+" · "+(c.time||""); $("tBody").textContent=c.transcript||"(no transcript captured)"; $("tOverlay").classList.add("show"); };
 boot();
 </script>
 </body>

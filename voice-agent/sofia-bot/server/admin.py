@@ -9,15 +9,21 @@
 # Open: http://localhost:8080
 #
 
+import asyncio
 import json
 import os
 import re
 import shutil
 
-from fastapi import FastAPI, HTTPException
+from dotenv import load_dotenv
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+
+import rag
+
+load_dotenv()  # so the embedding step has OPENAI_API_KEY
 
 BASE = os.path.dirname(__file__)
 ASSISTANTS_DIR = os.path.join(BASE, "assistants")
@@ -227,6 +233,79 @@ def get_defaults(type: str = "outbound"):
     config["name"] = f"New {t.capitalize()} Assistant"
     config["greeting"] = TYPE_DEFAULTS[t]["greeting"]
     return {"config": config, "prompt": TYPE_DEFAULTS[t]["prompt"]}
+
+
+# ── Knowledge base (per-assistant document uploads; RAG indexing = next build) ──
+def _kb_dir(aid: str) -> str:
+    d = os.path.join(ASSISTANTS_DIR, aid, "knowledge")
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+def _assistant_dir(aid: str) -> str:
+    return os.path.join(ASSISTANTS_DIR, aid)
+
+
+@app.get("/api/assistants/{aid}/knowledge")
+def list_knowledge(aid: str):
+    d = _kb_dir(aid)
+    files = [
+        {"name": f, "size": os.path.getsize(os.path.join(d, f))}
+        for f in sorted(os.listdir(d))
+        if os.path.isfile(os.path.join(d, f))
+    ]
+    return {"files": files, **rag.index_stats(_assistant_dir(aid))}
+
+
+@app.post("/api/assistants/{aid}/knowledge")
+async def upload_knowledge(aid: str, file: UploadFile = File(...)):
+    dest = os.path.join(_kb_dir(aid), os.path.basename(file.filename))
+    with open(dest, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+    stats = await asyncio.to_thread(rag.index, _assistant_dir(aid))  # (re)build the vector index
+    return {"name": os.path.basename(file.filename), "size": os.path.getsize(dest), **stats}
+
+
+@app.post("/api/assistants/{aid}/knowledge/reindex")
+async def reindex_knowledge(aid: str):
+    return await asyncio.to_thread(rag.index, _assistant_dir(aid))
+
+
+@app.delete("/api/assistants/{aid}/knowledge/{filename}")
+async def delete_knowledge(aid: str, filename: str):
+    p = os.path.join(_kb_dir(aid), os.path.basename(filename))
+    if os.path.isfile(p):
+        os.remove(p)
+    await asyncio.to_thread(rag.index, _assistant_dir(aid))
+    return {"deleted": filename}
+
+
+# ── Call logs (engine posts a record at call end; dashboard reads them) ──
+CALLS_FILE = os.path.join(BASE, "calls.json")
+
+
+def _read_calls() -> list:
+    if os.path.isfile(CALLS_FILE):
+        try:
+            with open(CALLS_FILE, encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return []
+    return []
+
+
+@app.get("/api/calls")
+def list_calls():
+    return list(reversed(_read_calls()))  # newest first
+
+
+@app.post("/api/calls")
+async def add_call(payload: dict):
+    calls = _read_calls()
+    calls.append(payload)
+    with open(CALLS_FILE, "w", encoding="utf-8") as f:
+        json.dump(calls, f, indent=2, ensure_ascii=False)
+    return {"ok": True}
 
 
 # Serve the dashboard (mounted last so /api/* wins)
