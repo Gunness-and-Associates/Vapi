@@ -205,7 +205,12 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
                 result = text
                 try:
                     data = json.loads(text)
-                    result = data.get("result") or data.get("message") or text
+                    # n8n workflows reply in Vapi's shape: {"results":[{"result": "..."}]}.
+                    # Also accept a flat {"result": ...} / {"message": ...}.
+                    if isinstance(data, dict) and isinstance(data.get("results"), list) and data["results"]:
+                        result = data["results"][0].get("result") or text
+                    elif isinstance(data, dict):
+                        result = data.get("result") or data.get("message") or text
                 except Exception:
                     pass
                 await params.result_callback(result or "Done.")
