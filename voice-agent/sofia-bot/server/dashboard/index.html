@@ -6,150 +6,216 @@
 <title>HQ Lead Engine · Platform</title>
 <style>
   :root{
-    --bg:#0a0f0e; --panel:#101a17; --panel2:#16231f; --raise:#1a2a25;
-    --ink:#eef4f2; --muted:#93a8a2; --faint:#63756f;
-    --line:#1d2c28; --line2:#2a3d37;
-    --teal:#1cc0a4; --teal2:#2fe0c0; --teal-deep:#0c6f5f; --teal-ghost:rgba(28,192,164,.12);
-    --amber:#e0b155; --danger:#e2664a; --good:#28c892;
-    --sh:0 1px 2px rgba(0,0,0,.4),0 8px 30px rgba(0,0,0,.22);
-    --r:13px;
+    --bg:#080b0b; --bg2:#0b1010;
+    --s1:#0f1615; --s2:#131d1b; --s3:#192523; --raise:#1e2c29;
+    --ink:#f1f6f4; --muted:#9db0ab; --faint:#667873;
+    --line:#1b2624; --line2:#293a36; --line3:#354a45;
+    --teal:#22cdae; --teal2:#5ee8ce; --teal-deep:#0c6a5b; --tglow:rgba(34,205,174,.14); --tglow2:rgba(34,205,174,.28);
+    --amber:#e6b95e; --amber-ghost:rgba(230,185,94,.14);
+    --danger:#eb6a4d; --danger-ghost:rgba(235,106,77,.12); --good:#2fd39a;
+    --sh1:0 1px 2px rgba(0,0,0,.35); --sh2:0 2px 6px rgba(0,0,0,.3),0 12px 34px rgba(0,0,0,.28);
+    --r:14px; --r-sm:10px;
   }
   *{box-sizing:border-box}
-  ::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:var(--line2);border-radius:6px}
-  body{margin:0;height:100vh;display:flex;font-family:"Segoe UI",system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;overflow:hidden;-webkit-font-smoothing:antialiased}
-  button{font-family:inherit;cursor:pointer;border:none;border-radius:10px;font-weight:600;transition:.14s ease}
-  input,select,textarea{font-family:inherit;font-size:13.5px;color:var(--ink);background:var(--bg);border:1px solid var(--line2);border-radius:10px;padding:10px 12px;width:100%;outline:none;transition:.14s}
-  input:focus,select:focus,textarea:focus{border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-ghost)}
-  select:disabled{opacity:.6}
-  label{display:block;font-size:11px;color:var(--muted);margin:0 0 7px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
-  .hint{font-size:12px;color:var(--faint);margin:6px 0 0;line-height:1.5}
-  .eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--teal);font-weight:700}
+  ::-webkit-scrollbar{width:11px;height:11px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--line2);border-radius:8px;border:3px solid transparent;background-clip:padding-box}
+  ::-webkit-scrollbar-thumb:hover{background:var(--line3);background-clip:padding-box}
+  html,body{height:100%}
+  body{margin:0;display:flex;font-family:"Inter",-apple-system,"Segoe UI",system-ui,sans-serif;
+    background:radial-gradient(1200px 700px at 78% -8%,rgba(34,205,174,.05),transparent 60%),var(--bg);
+    color:var(--ink);font-size:14px;overflow:hidden;-webkit-font-smoothing:antialiased;
+    font-feature-settings:"cv02","cv03","cv04","ss01";letter-spacing:-.005em}
+  svg{width:18px;height:18px;flex:none;stroke-width:1.75;vertical-align:middle}
+  button{font-family:inherit;cursor:pointer;border:none;border-radius:var(--r-sm);font-weight:600;transition:.15s cubic-bezier(.4,0,.2,1);
+    display:inline-flex;align-items:center;justify-content:center;gap:8px}
+  input,select,textarea{font-family:inherit;font-size:13.5px;color:var(--ink);background:var(--bg2);border:1px solid var(--line2);
+    border-radius:var(--r-sm);padding:10px 13px;width:100%;outline:none;transition:.15s}
+  input::placeholder,textarea::placeholder{color:var(--faint)}
+  input:hover,select:hover,textarea:hover{border-color:var(--line3)}
+  input:focus,select:focus,textarea:focus{border-color:var(--teal);box-shadow:0 0 0 3.5px var(--tglow)}
+  select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23667873' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px}
+  select:disabled{opacity:.55}
+  label{display:block;font-size:11px;color:var(--muted);margin:0 0 8px;font-weight:600;letter-spacing:.03em;text-transform:uppercase}
+  .hint{font-size:12px;color:var(--faint);margin:7px 0 0;line-height:1.55}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--teal);font-weight:700;margin-bottom:9px}
 
   /* sidebar */
-  .side{width:238px;flex:none;background:linear-gradient(180deg,var(--panel),var(--bg));border-right:1px solid var(--line);display:flex;flex-direction:column}
-  .brand{padding:22px 20px 18px;display:flex;align-items:center;gap:11px}
-  .brand .logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--teal2),var(--teal-deep));display:grid;place-items:center;font-size:17px;box-shadow:0 4px 14px rgba(28,192,164,.35)}
-  .brand b{font-size:14.5px;letter-spacing:-.01em} .brand span{display:block;font-size:11px;color:var(--faint);font-weight:400}
-  .nav{padding:8px 12px;flex:1}
-  .nav .lbl{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--faint);padding:12px 12px 6px;font-weight:700}
-  .nav a{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;color:var(--muted);cursor:pointer;font-weight:600;font-size:13.5px;margin-bottom:2px}
-  .nav a:hover{background:var(--panel2);color:var(--ink)} .nav a.active{background:var(--teal-ghost);color:var(--teal)}
-  .nav .ic{width:18px;text-align:center;font-size:15px}
-  .side .foot{padding:14px 18px;border-top:1px solid var(--line);font-size:12px;color:var(--faint);display:flex;align-items:center;gap:8px}
+  .side{width:246px;flex:none;background:linear-gradient(180deg,var(--s1),var(--bg) 70%);border-right:1px solid var(--line);display:flex;flex-direction:column}
+  .brand{padding:22px 20px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--line)}
+  .brand .logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(140deg,var(--teal2),var(--teal-deep));display:grid;place-items:center;color:#04211c;box-shadow:0 4px 16px rgba(34,205,174,.4),inset 0 1px 0 rgba(255,255,255,.25)}
+  .brand .logo svg{width:20px;height:20px;stroke-width:2}
+  .brand b{font-size:14.5px;letter-spacing:-.02em;font-weight:700} .brand span{display:block;font-size:11px;color:var(--faint);font-weight:500;margin-top:1px}
+  .nav{padding:14px 12px;flex:1}
+  .nav .lbl{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);padding:14px 12px 7px;font-weight:700}
+  .nav a{position:relative;display:flex;align-items:center;gap:12px;padding:10px 13px;border-radius:var(--r-sm);color:var(--muted);cursor:pointer;font-weight:600;font-size:13.5px;margin-bottom:3px;transition:.13s}
+  .nav a svg{width:18px;height:18px;color:var(--faint);transition:.13s}
+  .nav a:hover{background:var(--s2);color:var(--ink)} .nav a:hover svg{color:var(--muted)}
+  .nav a.active{background:var(--tglow);color:var(--teal)} .nav a.active svg{color:var(--teal)}
+  .nav a.active::before{content:"";position:absolute;left:-12px;top:9px;bottom:9px;width:3px;border-radius:0 3px 3px 0;background:var(--teal);box-shadow:0 0 10px var(--tglow2)}
+  .side .foot{padding:15px 20px;border-top:1px solid var(--line);font-size:12px;color:var(--faint);display:flex;align-items:center;gap:9px}
+  .side .foot svg{width:14px;height:14px}
 
-  .main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+  .main{flex:1;overflow-y:auto;display:flex;flex-direction:column;min-width:0}
 
   /* topbar */
-  .topbar{position:sticky;top:0;z-index:8;background:rgba(10,15,14,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:0 30px;height:64px;display:flex;align-items:center;gap:14px;flex:none}
-  .topbar .crumb{color:var(--faint);cursor:pointer;font-size:20px;line-height:1}
-  .topbar h1{font-size:19px;font-weight:800;margin:0;letter-spacing:-.02em}
+  .topbar{position:sticky;top:0;z-index:8;background:rgba(8,11,11,.8);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);padding:0 32px;height:66px;display:flex;align-items:center;gap:14px;flex:none}
+  .topbar .crumb{color:var(--faint);cursor:pointer;display:grid;place-items:center;width:34px;height:34px;border-radius:9px;transition:.13s;margin-left:-6px}
+  .topbar .crumb:hover{background:var(--s2);color:var(--ink)}
+  .topbar h1{font-size:19px;font-weight:700;margin:0;letter-spacing:-.03em}
   .topbar .spacer{flex:1}
-  .badge{font-size:10px;padding:3px 9px;border-radius:999px;font-weight:800;letter-spacing:.04em}
-  .badge.out{background:var(--teal-ghost);color:var(--teal)} .badge.in{background:rgba(224,177,85,.14);color:var(--amber)}
-  .badge.draft{background:rgba(147,168,162,.14);color:var(--muted)}
+  .badge{font-size:10px;padding:4px 10px;border-radius:999px;font-weight:700;letter-spacing:.05em;display:inline-flex;align-items:center;gap:5px}
+  .badge svg{width:11px;height:11px;stroke-width:2.5}
+  .badge.out{background:var(--tglow);color:var(--teal)} .badge.in{background:var(--amber-ghost);color:var(--amber)}
+  .badge.draft{background:rgba(157,176,171,.13);color:var(--muted)}
 
-  .btn-primary{background:linear-gradient(180deg,var(--teal2),var(--teal));color:#04211c;padding:10px 18px;box-shadow:0 4px 14px rgba(28,192,164,.28)}
-  .btn-primary:hover{filter:brightness(1.07);transform:translateY(-1px)}
-  .btn-ghost{background:transparent;border:1px solid var(--line2);color:var(--ink);padding:9px 15px}.btn-ghost:hover{background:var(--panel2);border-color:var(--teal)}
-  .btn-danger{background:transparent;border:1px solid rgba(226,102,74,.4);color:var(--danger);padding:9px 14px}.btn-danger:hover{background:rgba(226,102,74,.1)}
-  .btn-sm{padding:7px 12px;font-size:12.5px}
-  .content{padding:28px 30px;flex:1}
+  .btn-primary{background:linear-gradient(180deg,var(--teal2),var(--teal));color:#042019;padding:10px 18px;box-shadow:0 4px 16px var(--tglow2),inset 0 1px 0 rgba(255,255,255,.3)}
+  .btn-primary:hover{filter:brightness(1.06);transform:translateY(-1px);box-shadow:0 6px 20px var(--tglow2),inset 0 1px 0 rgba(255,255,255,.3)}
+  .btn-primary:active{transform:translateY(0)}
+  .btn-ghost{background:var(--s2);border:1px solid var(--line2);color:var(--ink);padding:9px 15px}.btn-ghost:hover{background:var(--s3);border-color:var(--line3)}
+  .btn-danger{background:transparent;border:1px solid var(--danger-ghost);color:var(--danger);padding:9px 14px}.btn-danger:hover{background:var(--danger-ghost);border-color:var(--danger)}
+  .btn-sm{padding:7px 12px;font-size:12.5px;border-radius:9px}
+  .btn-sm svg{width:14px;height:14px}
+  .content{padding:30px 32px;flex:1}
 
   /* assistant list */
-  .listwrap{max-width:920px}
-  .listrow{display:flex;align-items:center;gap:16px;padding:16px 18px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);margin-bottom:10px;cursor:pointer;transition:.14s}
-  .listrow:hover{border-color:var(--teal);background:var(--panel2);transform:translateY(-1px)}
-  .listrow .avatar{width:40px;height:40px;border-radius:11px;background:var(--raise);display:grid;place-items:center;font-size:18px;flex:none}
-  .listrow .nm{font-weight:700;font-size:15px;letter-spacing:-.01em} .listrow .meta{font-size:12px;color:var(--faint);font-family:"Cascadia Code",Consolas,monospace;margin-top:3px}
-  .listrow .chev{color:var(--faint);font-size:18px}
-  .empty{text-align:center;padding:72px 20px;color:var(--faint);max-width:520px;margin:0 auto}.empty .big{font-size:52px;margin-bottom:14px;opacity:.8}.empty h3{color:var(--ink);margin:0 0 6px;font-size:18px}
+  .listwrap{max-width:960px}
+  .listrow{display:flex;align-items:center;gap:16px;padding:16px 18px;background:var(--s1);border:1px solid var(--line);border-radius:var(--r);margin-bottom:11px;cursor:pointer;transition:.15s}
+  .listrow:hover{border-color:var(--line3);background:var(--s2);transform:translateY(-2px);box-shadow:var(--sh2)}
+  .listrow .avatar{width:44px;height:44px;border-radius:12px;background:linear-gradient(150deg,var(--s3),var(--raise));border:1px solid var(--line2);display:grid;place-items:center;color:var(--teal);flex:none}
+  .listrow .avatar svg{width:20px;height:20px}
+  .listrow.in .avatar{color:var(--amber)}
+  .listrow .nm{font-weight:650;font-size:15px;letter-spacing:-.02em} .listrow .meta{font-size:12px;color:var(--faint);font-family:"SF Mono","Cascadia Code",Consolas,monospace;margin-top:3px;letter-spacing:0}
+  .listrow .chev{color:var(--faint);display:flex}.listrow:hover .chev{color:var(--teal)}
+  .empty{text-align:center;padding:76px 20px;color:var(--faint);max-width:520px;margin:0 auto}
+  .empty .big{width:76px;height:76px;margin:0 auto 18px;border-radius:20px;background:var(--s2);border:1px solid var(--line2);display:grid;place-items:center;color:var(--line3)}
+  .empty .big svg{width:36px;height:36px;stroke-width:1.5}
+  .empty h3{color:var(--ink);margin:0 0 7px;font-size:18px;letter-spacing:-.02em}.empty div{line-height:1.6}
 
-  /* editor 2-pane */
-  .tabs{display:flex;gap:2px;padding:0 30px;border-bottom:1px solid var(--line);background:var(--bg);position:sticky;top:64px;z-index:7;overflow-x:auto;flex:none}
-  .tabs button{background:transparent;color:var(--muted);padding:14px 16px;border-radius:0;border-bottom:2px solid transparent;font-size:13.5px;white-space:nowrap;display:flex;gap:7px;align-items:center}
-  .tabs button:hover{color:var(--ink)} .tabs button.on{color:var(--teal);border-bottom-color:var(--teal)}
-  .egrid{display:grid;grid-template-columns:1fr 330px;gap:0;flex:1;min-height:0}
-  .ecol{padding:26px 30px;overflow-y:auto;max-width:760px}
-  .erail{border-left:1px solid var(--line);background:var(--panel);padding:24px 22px;overflow-y:auto}
-  .erail .rname{font-size:17px;font-weight:800;letter-spacing:-.01em;margin:2px 0 10px;word-break:break-word}
-  .summary{display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:16px 0}
-  .summary .r{display:flex;justify-content:space-between;gap:10px;padding:11px 13px;background:var(--panel);font-size:12.5px}
-  .summary .r .k{color:var(--faint)} .summary .r .val{font-family:"Cascadia Code",Consolas,monospace;color:var(--ink);text-align:right;word-break:break-all}
-  .est{background:var(--teal-ghost);border:1px solid var(--line2);border-radius:12px;padding:13px 15px;margin-bottom:16px}
-  .est .n{font-size:20px;font-weight:800;color:var(--teal);font-family:"Cascadia Code",Consolas,monospace} .est .l{font-size:11px;color:var(--muted)}
-  .rail-actions{display:flex;flex-direction:column;gap:9px}
-  .rail-actions button{width:100%;padding:11px}
-  .btn-test{background:var(--raise);border:1px solid var(--line2);color:var(--ink)}.btn-test:hover{border-color:var(--teal);color:var(--teal)}
+  /* editor */
+  .tabs{display:flex;gap:4px;padding:0 32px;border-bottom:1px solid var(--line);background:var(--bg);position:sticky;top:66px;z-index:7;overflow-x:auto;flex:none}
+  .tabs button{background:transparent;color:var(--muted);padding:15px 14px;border-radius:0;border-bottom:2px solid transparent;font-size:13.5px;white-space:nowrap;font-weight:600;margin-bottom:-1px}
+  .tabs button svg{width:16px;height:16px;color:var(--faint);transition:.13s}
+  .tabs button:hover{color:var(--ink)}.tabs button:hover svg{color:var(--muted)}
+  .tabs button.on{color:var(--teal);border-bottom-color:var(--teal)}.tabs button.on svg{color:var(--teal)}
+  .egrid{display:grid;grid-template-columns:1fr 340px;gap:0;flex:1;min-height:0}
+  .ecol{padding:30px 34px;overflow-y:auto;max-width:800px}
+  .erail{border-left:1px solid var(--line);background:linear-gradient(180deg,var(--s1),var(--bg));padding:28px 24px;overflow-y:auto}
+  .erail .rname{font-size:18px;font-weight:700;letter-spacing:-.02em;margin:2px 0 12px;word-break:break-word}
+  .summary{display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:18px 0}
+  .summary .r{display:flex;justify-content:space-between;gap:10px;padding:12px 14px;background:var(--s1);font-size:12.5px}
+  .summary .r .k{color:var(--faint)} .summary .r .val{font-family:"SF Mono","Cascadia Code",Consolas,monospace;color:var(--ink);text-align:right;word-break:break-all;font-size:12px}
+  .est{background:linear-gradient(135deg,var(--tglow),transparent);border:1px solid var(--line2);border-radius:12px;padding:15px 16px;margin-bottom:18px}
+  .est .n{font-size:22px;font-weight:800;color:var(--teal);font-family:"SF Mono","Cascadia Code",Consolas,monospace;letter-spacing:-.02em} .est .l{font-size:11px;color:var(--muted);margin-top:2px}
+  .rail-actions{display:flex;flex-direction:column;gap:10px}
+  .rail-actions button{width:100%;padding:12px}
+  .btn-test{background:var(--s3);border:1px solid var(--line2);color:var(--ink)}.btn-test:hover{border-color:var(--teal);color:var(--teal)}
 
   /* cards & forms */
-  .sec{margin-bottom:28px}
-  .sec-h{margin:0 0 3px;font-size:15px;font-weight:700;letter-spacing:-.01em}
-  .sec-d{margin:0 0 16px;font-size:12.5px;color:var(--faint);line-height:1.5}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:20px 22px;box-shadow:var(--sh)}
+  .sec{margin-bottom:30px}
+  .sec-h{margin:0 0 4px;font-size:15.5px;font-weight:700;letter-spacing:-.02em}
+  .sec-d{margin:0 0 16px;font-size:12.5px;color:var(--faint);line-height:1.55}
+  .card{background:var(--s1);border:1px solid var(--line);border-radius:var(--r);padding:22px;box-shadow:var(--sh1);position:relative}
+  .card::before{content:"";position:absolute;inset:0 0 auto;height:1px;border-radius:var(--r) var(--r) 0 0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.045),transparent)}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:16px}.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
-  .field{margin-bottom:16px}.field:last-child{margin-bottom:0}
-  textarea.prompt{min-height:380px;line-height:1.6;font-size:13px;resize:vertical}
-  .slider{display:flex;align-items:center;gap:14px}.slider input[type=range]{flex:1;accent-color:var(--teal)}
-  .slider .val{width:48px;text-align:right;font-family:"Cascadia Code",Consolas,monospace;color:var(--teal);font-size:13px}
-  .seg{display:inline-flex;background:var(--bg);border:1px solid var(--line2);border-radius:11px;padding:3px;gap:3px}
-  .seg button{padding:9px 20px;border-radius:8px;background:transparent;color:var(--muted);font-weight:700;font-size:13px}
-  .seg button.on-out{background:var(--teal-ghost);color:var(--teal)}.seg button.on-in{background:rgba(224,177,85,.18);color:var(--amber)}
-  .tool{border:1px solid var(--line2);border-radius:12px;padding:16px;margin-bottom:12px;background:var(--bg)}
-  .tool .th{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-  .builtin{font-size:11px;color:var(--amber);font-family:Consolas,monospace}
-  .chk{display:flex;gap:8px;align-items:center;margin:0;font-size:13px;color:var(--ink);text-transform:none;letter-spacing:0}.chk input{width:auto}
-  .drop{border:1.5px dashed var(--line2);border-radius:12px;padding:34px;text-align:center;color:var(--muted);cursor:pointer;transition:.14s}.drop:hover{border-color:var(--teal);color:var(--teal);background:var(--panel2)}
-  .filelist{margin-top:14px;display:flex;flex-direction:column;gap:8px}
-  .fileitem{display:flex;align-items:center;gap:11px;padding:11px 14px;background:var(--bg);border:1px solid var(--line2);border-radius:10px;font-size:13px}
+  .field{margin-bottom:17px}.field:last-child{margin-bottom:0}
+  textarea.prompt{min-height:400px;line-height:1.65;font-size:13px;resize:vertical;font-family:"SF Mono","Cascadia Code",Consolas,monospace}
+  .slider{display:flex;align-items:center;gap:14px}.slider input[type=range]{flex:1;accent-color:var(--teal);height:4px}
+  .slider .val{min-width:46px;text-align:right;font-family:"SF Mono",Consolas,monospace;color:var(--teal);font-size:13px;font-weight:600}
+  .seg{display:inline-flex;background:var(--bg2);border:1px solid var(--line2);border-radius:11px;padding:3px;gap:3px}
+  .seg button{padding:9px 18px;border-radius:8px;background:transparent;color:var(--muted);font-weight:650;font-size:13px}
+  .seg button svg{width:14px;height:14px}
+  .seg button.on-out{background:var(--tglow);color:var(--teal);box-shadow:var(--sh1)}.seg button.on-in{background:var(--amber-ghost);color:var(--amber);box-shadow:var(--sh1)}
+  .tool{border:1px solid var(--line2);border-radius:12px;padding:17px;margin-bottom:12px;background:var(--bg2)}
+  .tool .th{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:13px}
+  .builtin{font-size:11px;color:var(--amber);font-family:Consolas,monospace;display:inline-flex;align-items:center;gap:6px}
+  .chk{display:flex;gap:9px;align-items:center;margin:0;font-size:13px;color:var(--ink);text-transform:none;letter-spacing:0;cursor:pointer}.chk input{width:auto;accent-color:var(--teal)}
+  .drop{border:1.5px dashed var(--line3);border-radius:12px;padding:38px;text-align:center;color:var(--muted);cursor:pointer;transition:.15s}
+  .drop svg{width:26px;height:26px;color:var(--faint);margin-bottom:10px}
+  .drop:hover{border-color:var(--teal);color:var(--teal);background:var(--s2)}.drop:hover svg{color:var(--teal)}
+  .filelist{margin-top:15px;display:flex;flex-direction:column;gap:8px}
+  .fileitem{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg2);border:1px solid var(--line2);border-radius:10px;font-size:13px}
+  .fileitem svg{width:17px;height:17px;color:var(--teal)}
   .fileitem .fn{flex:1}.fileitem .sz{color:var(--faint);font-family:Consolas,monospace;font-size:12px}
-  .pill{font-size:10px;padding:2px 8px;border-radius:999px;background:var(--panel2);color:var(--amber);border:1px solid var(--line2)}
+  .pill{font-size:10px;padding:3px 9px;border-radius:999px;background:var(--s3);color:var(--amber);border:1px solid var(--line2);font-weight:700}
   table{width:100%;border-collapse:collapse;font-size:13.5px}
-  th{text-align:left;color:var(--faint);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;padding:13px 16px;border-bottom:1px solid var(--line)}
-  td{padding:14px 16px;border-bottom:1px solid var(--line)}tr:last-child td{border-bottom:none}
-  .tablecard{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh)}
+  th{text-align:left;color:var(--faint);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;font-weight:700;padding:14px 16px;border-bottom:1px solid var(--line)}
+  td{padding:15px 16px;border-bottom:1px solid var(--line)}tr:last-child td{border-bottom:none}
+  tbody tr{transition:.12s}tbody tr[onclick]:hover{background:var(--s2)}
+  .tablecard{background:var(--s1);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh1)}
 
-  .overlay{position:fixed;inset:0;background:rgba(3,6,5,.78);display:none;align-items:center;justify-content:center;z-index:30;backdrop-filter:blur(3px)}.overlay.show{display:flex}
-  .modal{background:var(--panel);border:1px solid var(--line2);border-radius:18px;padding:30px;max-width:580px;width:92%;box-shadow:var(--sh)}
-  .modal h2{margin:0 0 6px;font-size:21px;letter-spacing:-.01em}.modal p{margin:0 0 22px;color:var(--muted);font-size:13.5px}
+  .overlay{position:fixed;inset:0;background:rgba(3,6,5,.72);display:none;align-items:center;justify-content:center;z-index:30;backdrop-filter:blur(5px)}.overlay.show{display:flex;animation:fade .18s ease}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .modal{background:var(--s1);border:1px solid var(--line2);border-radius:20px;padding:32px;max-width:580px;width:92%;box-shadow:var(--sh2);animation:pop .22s cubic-bezier(.34,1.3,.6,1)}
+  @keyframes pop{from{transform:translateY(14px) scale(.97);opacity:0}to{transform:none;opacity:1}}
+  .modal h2{margin:0 0 6px;font-size:21px;letter-spacing:-.02em}.modal p{margin:0 0 24px;color:var(--muted);font-size:13.5px}
   .choices{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-  .choice{border:1px solid var(--line2);border-radius:15px;padding:24px;cursor:pointer;transition:.15s;text-align:center}
-  .choice:hover{border-color:var(--teal);background:var(--panel2);transform:translateY(-3px)}
-  .choice .ic{font-size:32px}.choice .t{font-weight:700;margin:10px 0 5px}.choice .d{font-size:12px;color:var(--faint);line-height:1.5}
-  .modal .cancel{margin-top:18px;background:transparent;color:var(--muted);border:1px solid var(--line2);padding:9px 16px}
-  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(90px);background:var(--good);color:#042018;padding:12px 24px;border-radius:11px;font-weight:700;transition:transform .3s;z-index:40;box-shadow:var(--sh)}.toast.show{transform:translateX(-50%) translateY(0)}.toast.err{background:var(--danger);color:#2a0f08}
+  .choice{border:1px solid var(--line2);border-radius:16px;padding:26px 22px;cursor:pointer;transition:.16s;text-align:center;background:var(--bg2)}
+  .choice:hover{border-color:var(--teal);background:var(--s2);transform:translateY(-3px);box-shadow:var(--sh2)}
+  .choice .ic{width:52px;height:52px;margin:0 auto;border-radius:14px;display:grid;place-items:center;background:var(--tglow);color:var(--teal)}
+  .choice[data-type=inbound] .ic{background:var(--amber-ghost);color:var(--amber)}
+  .choice .ic svg{width:24px;height:24px}
+  .choice .t{font-weight:700;margin:14px 0 5px;font-size:15px}.choice .d{font-size:12px;color:var(--faint);line-height:1.55}
+  .modal .cancel{margin-top:20px;background:transparent;color:var(--muted);border:1px solid var(--line2);padding:9px 16px}.modal .cancel:hover{background:var(--s2);color:var(--ink)}
+  .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(90px);background:var(--good);color:#042018;padding:13px 24px;border-radius:12px;font-weight:700;transition:transform .32s cubic-bezier(.34,1.3,.6,1);z-index:40;box-shadow:var(--sh2)}.toast.show{transform:translateX(-50%) translateY(0)}.toast.err{background:var(--danger);color:#2a0f08}
 </style>
 </head>
 <body>
   <aside class="side">
-    <div class="brand"><div class="logo">🎙</div><div><b>HQ Lead Engine</b><span>Voice AI platform</span></div></div>
+    <div class="brand">
+      <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg></div>
+      <div><b>HQ Lead Engine</b><span>Voice AI platform</span></div>
+    </div>
     <nav class="nav" id="nav">
       <div class="lbl">Build</div>
-      <a data-sec="assistants" class="active"><span class="ic">🤖</span> Assistants</a>
-      <a data-sec="tools"><span class="ic">🛠</span> Tools</a>
-      <a data-sec="knowledge"><span class="ic">📚</span> Knowledge Base</a>
+      <a data-sec="assistants" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg> Assistants</a>
+      <a data-sec="tools"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> Tools</a>
+      <a data-sec="knowledge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg> Knowledge Base</a>
       <div class="lbl">Monitor</div>
-      <a data-sec="calls"><span class="ic">📞</span> Call Logs</a>
+      <a data-sec="calls"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg> Call Logs</a>
     </nav>
-    <div class="foot">🔒 Login &amp; teams — coming soon</div>
+    <div class="foot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Login &amp; teams — coming soon</div>
   </aside>
   <main class="main" id="main"></main>
 
   <div class="overlay" id="overlay"><div class="modal">
     <h2>Create a new assistant</h2><p>What kind of agent are you building? We'll tailor the setup.</p>
     <div class="choices">
-      <div class="choice" data-type="outbound"><div class="ic">📤</div><div class="t">Outbound</div><div class="d">Your agent <b>calls leads</b> — pitch, qualify, hand off.</div></div>
-      <div class="choice" data-type="inbound"><div class="ic">📥</div><div class="t">Inbound</div><div class="d">Leads <b>call your agent</b> — answer, help, enroll.</div></div>
+      <div class="choice" data-type="outbound"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></div><div class="t">Outbound</div><div class="d">Your agent <b>calls leads</b> — pitch, qualify, close.</div></div>
+      <div class="choice" data-type="inbound"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M17 7 7 17"/><path d="M17 17H7V7"/></svg></div><div class="t">Inbound</div><div class="d">Leads <b>call your agent</b> — answer, help, enroll.</div></div>
     </div>
     <button class="cancel" id="cancelNew">Cancel</button>
   </div></div>
   <div class="overlay" id="tOverlay"><div class="modal" style="max-width:660px">
     <h2 id="tTitle">Transcript</h2>
-    <div id="tBody" style="max-height:58vh;overflow:auto;white-space:pre-wrap;font-size:13px;line-height:1.7;color:var(--muted);background:var(--bg);border:1px solid var(--line2);border-radius:12px;padding:16px"></div>
+    <div id="tBody" style="max-height:58vh;overflow:auto;white-space:pre-wrap;font-size:13px;line-height:1.75;color:var(--muted);background:var(--bg2);border:1px solid var(--line2);border-radius:12px;padding:18px"></div>
     <button class="cancel" onclick="document.getElementById('tOverlay').classList.remove('show')" style="margin-top:16px">Close</button>
   </div></div>
   <div class="toast" id="toast"></div>
 
 <script>
+const IC={
+  bot:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>',
+  out:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg>',
+  in:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M17 7 7 17"/><path d="M17 17H7V7"/></svg>',
+  chev:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>',
+  back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>',
+  play:'<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M6 3v18l15-9z"/></svg>',
+  trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+  upload:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>',
+  file:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/></svg>',
+  bot2:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>',
+  phone:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+  // tab icons
+  t_model:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg>',
+  t_voice:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="2" x2="6" y1="14" y2="14"/><line x1="10" x2="14" y1="8" y2="8"/><line x1="18" x2="22" y1="16" y2="16"/></svg>',
+  t_prompt:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+  t_tools:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
+  t_knowledge:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>',
+  t_advanced:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+};
 let OPTIONS={llm:{openai:["gpt-4.1"]},stt:{deepgram:["nova-3"]},tts:{elevenlabs:["eleven_flash_v2_5"]}};
 let S={section:"assistants",list:[],current:null,isNew:false,tab:"model"};
 const $=id=>document.getElementById(id);
@@ -169,24 +235,24 @@ async function boot(){ try{OPTIONS=await api("/api/options");}catch(e){}
 function go(sec){ S.section=sec; S.current=null; S.isNew=false;
   document.querySelectorAll("#nav a").forEach(a=>a.classList.toggle("active",a.dataset.sec===sec)); render(); }
 async function loadList(){ S.list=await api("/api/assistants"); }
-function topbar(title,actionsHtml,crumb){ return `<div class="topbar">${crumb?`<span class="crumb" onclick="backToList()">←</span>`:""}<h1>${title}</h1><span class="spacer"></span>${actionsHtml||""}</div>`; }
+function topbar(title,actionsHtml,crumb){ return `<div class="topbar">${crumb?`<span class="crumb" onclick="backToList()">${IC.back}</span>`:""}<h1>${title}</h1><span class="spacer"></span>${actionsHtml||""}</div>`; }
 
 function render(){ const m=$("main");
   if(S.current) return renderEditor(m);
   if(S.section==="assistants") return renderAssistants(m);
   if(S.section==="tools") return renderLaunch(m,"Tools","Tools let agents take actions mid-call (send a link, book, end call) via n8n webhooks — managed inside each assistant.","tools");
-  if(S.section==="knowledge") return renderLaunch(m,"Knowledge Base","Upload PDFs/docs per assistant so it can answer from them. (Indexing & retrieval is the next build.)","knowledge");
+  if(S.section==="knowledge") return renderLaunch(m,"Knowledge Base","Upload PDFs/docs per assistant so it can answer from them, indexed automatically for mid-call lookup.","knowledge");
   if(S.section==="calls") return renderCalls(m);
 }
 
 function renderAssistants(m){
-  const rows=S.list.map(a=>{const t=a.type||"outbound";return `<div class="listrow" onclick="openAssistant('${a.id}')">
-    <div class="avatar">${t==='inbound'?'📥':'📤'}</div>
+  const rows=S.list.map(a=>{const t=a.type||"outbound";return `<div class="listrow ${t==='inbound'?'in':''}" onclick="openAssistant('${a.id}')">
+    <div class="avatar">${t==='inbound'?IC.in:IC.out}</div>
     <div style="flex:1"><div class="nm">${esc(a.name||a.id)}</div><div class="meta">${a.llm||"—"} · ${(a.voice||"").slice(0,14)||"no voice"}</div></div>
-    <span class="badge ${t==='inbound'?'in':'out'}">${t.toUpperCase()}</span><span class="chev">›</span></div>`;}).join("");
-  m.innerHTML=topbar("Assistants",`<button class="btn-primary" onclick="newAssistant()">+ Create Assistant</button>`)+
+    <span class="badge ${t==='inbound'?'in':'out'}">${t.toUpperCase()}</span><span class="chev">${IC.chev}</span></div>`;}).join("");
+  m.innerHTML=topbar("Assistants",`<button class="btn-primary" onclick="newAssistant()">${IC.plus} Create Assistant</button>`)+
     `<div class="content"><div class="listwrap">${ S.list.length ? rows :
-      `<div class="empty"><div class="big">🤖</div><h3>No assistants yet</h3><div>Create your first voice agent — pick a type, choose models, write the prompt. Takes a couple minutes.</div><br><button class="btn-primary" onclick="newAssistant()">+ Create Assistant</button></div>`}</div></div>`;
+      `<div class="empty"><div class="big">${IC.bot2}</div><h3>No assistants yet</h3><div>Create your first voice agent — pick a type, choose models, write the prompt. Takes a couple minutes.</div><br><button class="btn-primary" onclick="newAssistant()">${IC.plus} Create Assistant</button></div>`}</div></div>`;
 }
 window.newAssistant=()=>$("overlay").classList.add("show");
 window.openAssistant=async(id)=>{ S.current=await api("/api/assistants/"+id); S.isNew=false; S.tab="model"; render(); };
@@ -194,20 +260,20 @@ window.backToList=()=>{ S.current=null; S.section="assistants"; document.querySe
 async function createWithType(type){ $("overlay").classList.remove("show"); const d=await api("/api/defaults?type="+type);
   S.current={id:null,config:d.config,prompt:d.prompt}; S.isNew=true; S.tab="model"; render(); }
 
-const TABS=[["model","⚙ Model"],["voice","🎚 Voice"],["prompt","📝 Prompt"],["tools","🛠 Tools"],["knowledge","📚 Knowledge"],["advanced","⚡ Advanced"]];
+const TABS=[["model","Model",IC.t_model],["voice","Voice",IC.t_voice],["prompt","Prompt",IC.t_prompt],["tools","Tools",IC.t_tools],["knowledge","Knowledge",IC.t_knowledge],["advanced","Advanced",IC.t_advanced]];
 function estCost(c){ const t=c.llm?.model||""; const base=0.03; const llm=/mini|nano|4o-mini/.test(t)?0.006:(/gpt-5/.test(t)?0.03:0.012); return (base+llm).toFixed(2); }
 function renderEditor(m){
   const c=S.current.config, type=c.type||"outbound", tts=c.tts||{},llm=c.llm||{},stt=c.stt||{};
   m.innerHTML=
     topbar(`<span id="barName">${esc(c.name||"New Assistant")}</span>`,
       `<span class="badge ${S.isNew?'draft':(type==='inbound'?'in':'out')}">${S.isNew?'DRAFT':type.toUpperCase()}</span>`, true)+
-    `<div class="tabs">${TABS.map(([k,l])=>`<button class="${S.tab===k?'on':''}" onclick="switchTab('${k}')">${l}</button>`).join("")}</div>
+    `<div class="tabs">${TABS.map(([k,l,ic])=>`<button class="${S.tab===k?'on':''}" onclick="switchTab('${k}')">${ic}<span>${l}</span></button>`).join("")}</div>
      <div class="egrid">
        <div class="ecol" id="ecol">${tabBody(S.tab,c)}</div>
        <aside class="erail">
          <div class="eyebrow">Assistant</div>
          <div class="rname" id="railName">${esc(c.name||"New Assistant")}</div>
-         <span class="badge ${type==='inbound'?'in':'out'}">${type.toUpperCase()}</span>
+         <span class="badge ${type==='inbound'?'in':'out'}">${(type==='inbound'?IC.in:IC.out)}${type.toUpperCase()}</span>
          <div class="est" style="margin-top:16px"><div class="n">~$${estCost(c)}<span style="font-size:12px">/min</span></div><div class="l">estimated voice cost</div></div>
          <div class="summary">
            <div class="r"><span class="k">Transcriber</span><span class="val">${esc(stt.model||"nova-3")}</span></div>
@@ -218,8 +284,8 @@ function renderEditor(m){
          </div>
          <div class="rail-actions">
            <button class="btn-primary" onclick="save()">${S.isNew?"Create assistant":"Save changes"}</button>
-           <button class="btn-test" onclick="window.open('http://localhost:8000','_blank')">▶ Talk to test</button>
-           ${S.isNew?"":'<button class="btn-danger" onclick="del()">Delete</button>'}
+           <button class="btn-test" onclick="window.open('http://localhost:8000','_blank')">${IC.play} Talk to test</button>
+           ${S.isNew?"":`<button class="btn-danger" onclick="del()">${IC.trash} Delete</button>`}
          </div>
        </aside>
      </div>`;
@@ -236,8 +302,8 @@ function tabBody(tab,c){
   if(tab==="model") return `
     <div class="sec"><div class="eyebrow">Identity</div><h2 class="sec-h">Type &amp; name</h2><p class="sec-d">Outbound calls out to leads; inbound answers calls coming in.</p>
       <div class="card"><div class="field"><label>Assistant type</label><div class="seg">
-        <button class="${type==='outbound'?'on-out':''}" onclick="switchType('outbound')">📤 Outbound</button>
-        <button class="${type==='inbound'?'on-in':''}" onclick="switchType('inbound')">📥 Inbound</button></div></div>
+        <button class="${type==='outbound'?'on-out':''}" onclick="switchType('outbound')">${IC.out} Outbound</button>
+        <button class="${type==='inbound'?'on-in':''}" onclick="switchType('inbound')">${IC.in} Inbound</button></div></div>
         <div class="field"><label>Name</label><input id="f_name" value="${escA(c.name||"")}" placeholder="e.g. HQ Sales Closer"></div></div></div>
     <div class="sec"><div class="eyebrow">Pipeline</div><h2 class="sec-h">Models</h2><p class="sec-d">Provider is fixed per layer — pick the model that fits.</p>
       <div class="card">
@@ -261,14 +327,14 @@ function tabBody(tab,c){
       <div class="card"><textarea class="prompt" id="f_prompt">${esc(S.current.prompt||"")}</textarea></div></div>`;}
   if(tab==="tools"){ const tools=c.tools||[];
     const blocks=tools.map((t,i)=>{const bi=t.name==="end_call";return `<div class="tool">
-      <div class="th"><input id="tool_${i}_name" value="${escA(t.name||"")}" style="max-width:280px;font-weight:600" ${bi?"readonly":""}><button class="btn-danger btn-sm" onclick="removeTool(${i})">Remove</button></div>
+      <div class="th"><input id="tool_${i}_name" value="${escA(t.name||"")}" style="max-width:280px;font-weight:600" ${bi?"readonly":""}><button class="btn-danger btn-sm" onclick="removeTool(${i})">${IC.trash} Remove</button></div>
       <div class="field"><label>When the agent should use it</label><input id="tool_${i}_desc" value="${escA(t.description||"")}"></div>
-      ${bi?`<div class="builtin">built-in — ends the call</div>`:`<div class="field"><label>n8n webhook URL</label><input id="tool_${i}_url" value="${escA(t.webhook_url||"")}" placeholder="https://your-n8n/webhook/..."></div>`}
+      ${bi?`<div class="builtin">${IC.check} built-in — ends the call</div>`:`<div class="field"><label>n8n webhook URL</label><input id="tool_${i}_url" value="${escA(t.webhook_url||"")}" placeholder="https://your-n8n/webhook/..."></div>`}
       <label class="chk"><input type="checkbox" id="tool_${i}_enabled" ${t.enabled!==false?"checked":""}> Enabled</label></div>`;}).join("");
     return `<div class="sec"><div class="eyebrow">Actions</div><h2 class="sec-h">Tools</h2><p class="sec-d">Mid-call actions via n8n webhooks. The model decides when, from your description.</p>
-      <div class="card">${blocks}<button class="btn-ghost btn-sm" onclick="addTool()">+ Add tool</button></div></div>`;}
+      <div class="card">${blocks}<button class="btn-ghost btn-sm" onclick="addTool()">${IC.plus} Add tool</button></div></div>`;}
   if(tab==="knowledge") return `<div class="sec"><div class="eyebrow">Grounding</div><h2 class="sec-h">Knowledge base</h2><p class="sec-d">Upload PDFs/docs about your program — indexed automatically, and the agent looks up answers from them mid-call.</p>
-      <div class="card"><div class="drop" onclick="document.getElementById('kbfile').click()">📄 &nbsp;Click to upload a PDF or document<div class="hint">PDF · DOCX · TXT — indexed on upload</div></div>
+      <div class="card"><div class="drop" onclick="document.getElementById('kbfile').click()">${IC.upload}<div>Click to upload a PDF or document</div><div class="hint">PDF · DOCX · TXT — indexed on upload</div></div>
       <input type="file" id="kbfile" style="display:none" onchange="uploadKB(this)">
       <div id="kbstatus" style="margin-top:14px"></div>
       <div class="filelist" id="kblist"><div class="hint">Loading…</div></div></div></div>`;
@@ -312,7 +378,7 @@ window.del=async()=>{ if(!confirm("Delete '"+S.current.id+"'?"))return; try{awai
 async function loadKB(){ if(!S.current||!S.current.id){$("kblist").innerHTML=`<div class="hint">Save the assistant first, then upload documents.</div>`;$("kbstatus").innerHTML="";return;}
   try{const data=await api("/api/assistants/"+S.current.id+"/knowledge"); const files=data.files||[];
     $("kbstatus").innerHTML = files.length?`<div style="display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--muted)"><span class="pill" style="${data.indexed?'color:var(--good);border-color:var(--good)':''}">${data.indexed?('✓ indexed · '+data.chunks+' passages'):'not indexed'}</span><button class="btn-ghost btn-sm" onclick="reindexKB()">Re-index</button></div>`:"";
-    $("kblist").innerHTML=files.length?files.map(f=>`<div class="fileitem"><span>📄</span><span class="fn">${esc(f.name)}</span><span class="sz">${fmtSize(f.size)}</span><button class="btn-danger btn-sm" onclick="delKB('${escA(f.name)}')">✕</button></div>`).join(""):`<div class="hint">No documents yet.</div>`;
+    $("kblist").innerHTML=files.length?files.map(f=>`<div class="fileitem">${IC.file}<span class="fn">${esc(f.name)}</span><span class="sz">${fmtSize(f.size)}</span><button class="btn-danger btn-sm" onclick="delKB('${escA(f.name)}')">✕</button></div>`).join(""):`<div class="hint">No documents yet.</div>`;
   }catch(e){$("kblist").innerHTML=`<div class="hint">Couldn't load.</div>`;} }
 window.uploadKB=async(inp)=>{ if(!S.current?.id){toast("Save the assistant first",true);return;} const f=inp.files[0];if(!f)return;const fd=new FormData();fd.append("file",f);
   toast("Uploading & indexing…");
@@ -321,14 +387,14 @@ window.reindexKB=async()=>{ toast("Re-indexing…"); try{const s=await api("/api
 window.delKB=async(name)=>{await api("/api/assistants/"+S.current.id+"/knowledge/"+encodeURIComponent(name),{method:"DELETE"});loadKB();};
 
 function renderLaunch(m,title,sub,tab){
-  const rows=S.list.map(a=>`<tr onclick="openTab('${a.id}','${tab}')" style="cursor:pointer"><td><b>${esc(a.name||a.id)}</b></td><td><span class="badge ${(a.type||'outbound')==='inbound'?'in':'out'}">${(a.type||'outbound').toUpperCase()}</span></td><td style="color:var(--faint)">Open →</td></tr>`).join("");
+  const rows=S.list.map(a=>`<tr onclick="openTab('${a.id}','${tab}')"><td><b>${esc(a.name||a.id)}</b></td><td><span class="badge ${(a.type||'outbound')==='inbound'?'in':'out'}">${(a.type||'outbound').toUpperCase()}</span></td><td style="color:var(--faint)">Open →</td></tr>`).join("");
   m.innerHTML=topbar(title)+`<div class="content"><div class="listwrap"><p class="sec-d">${sub}</p>
     <div class="tablecard"><table><thead><tr><th>Assistant</th><th>Type</th><th></th></tr></thead><tbody>${rows||'<tr><td colspan=3 style="color:var(--faint)">No assistants yet.</td></tr>'}</tbody></table></div></div></div>`;
 }
 window.openTab=async(id,tab)=>{S.current=await api("/api/assistants/"+id);S.isNew=false;S.tab=tab;render();};
 async function renderCalls(m){ m.innerHTML=topbar("Call Logs")+`<div class="content"><div class="listwrap"><p class="sec-d">Transcripts, duration and outcomes from your agents' calls — click a row to read the transcript.</p><div id="cb"><div class="hint">Loading…</div></div></div></div>`;
   try{const calls=await api("/api/calls"); S.calls=calls;
-    $("cb").innerHTML=calls.length?`<div class="tablecard"><table><thead><tr><th>Time</th><th>Assistant</th><th>Direction</th><th>Duration</th><th>Turns</th><th>Outcome</th></tr></thead><tbody>${calls.map((c,i)=>`<tr style="cursor:pointer" onclick="showTranscript(${i})"><td>${esc(c.time||"—")}</td><td>${esc(c.assistant||"—")}</td><td><span class="badge ${(c.direction||'outbound')==='inbound'?'in':'out'}">${(c.direction||'—').toUpperCase()}</span></td><td>${esc(c.duration||"—")}</td><td>${esc(String(c.turns??"—"))}</td><td>${esc(c.outcome||"—")}</td></tr>`).join("")}</tbody></table></div>`:`<div class="empty"><div class="big">📞</div><h3>No calls yet</h3><div>Once your agents start talking, every call shows up here with its transcript and outcome.</div></div>`;
+    $("cb").innerHTML=calls.length?`<div class="tablecard"><table><thead><tr><th>Time</th><th>Assistant</th><th>Direction</th><th>Duration</th><th>Turns</th><th>Outcome</th></tr></thead><tbody>${calls.map((c,i)=>`<tr onclick="showTranscript(${i})"><td>${esc(c.time||"—")}</td><td>${esc(c.assistant||"—")}</td><td><span class="badge ${(c.direction||'outbound')==='inbound'?'in':'out'}">${(c.direction||'—').toUpperCase()}</span></td><td>${esc(c.duration||"—")}</td><td>${esc(String(c.turns??"—"))}</td><td>${esc(c.outcome||"—")}</td></tr>`).join("")}</tbody></table></div>`:`<div class="empty"><div class="big">${IC.phone}</div><h3>No calls yet</h3><div>Once your agents start talking, every call shows up here with its transcript and outcome.</div></div>`;
   }catch(e){$("cb").innerHTML=`<div class="empty">Couldn't load calls.</div>`;} }
 window.showTranscript=(i)=>{ const c=(S.calls||[])[i]; if(!c)return; $("tTitle").textContent=(c.assistant||"Call")+" · "+(c.time||""); $("tBody").textContent=c.transcript||"(no transcript captured)"; $("tOverlay").classList.add("show"); };
 boot();

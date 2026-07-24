@@ -14,6 +14,8 @@ import json
 import os
 import re
 import shutil
+import sqlite3
+import threading
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, HTTPException, UploadFile
@@ -281,30 +283,75 @@ async def delete_knowledge(aid: str, filename: str):
 
 
 # ── Call logs (engine posts a record at call end; dashboard reads them) ──
-CALLS_FILE = os.path.join(BASE, "calls.json")
+# ── Call logs — SQLite (built for volume: 1000+ calls, concurrent writes) ──
+# A flat JSON file corrupts when two calls end at the same moment (interleaved
+# read-modify-write) and gets slow as it grows. SQLite is atomic per INSERT,
+# handles concurrent writers (WAL), and reads fast via an index — so nothing is
+# lost and the dashboard stays snappy at scale.
+CALLS_DB = os.path.join(BASE, "calls.db")
+CALLS_FILE = os.path.join(BASE, "calls.json")  # legacy — migrated in once
+_calls_write_lock = threading.Lock()
+_CALL_FIELDS = ("time", "assistant", "direction", "duration", "turns", "outcome", "transcript")
 
 
-def _read_calls() -> list:
-    if os.path.isfile(CALLS_FILE):
-        try:
-            with open(CALLS_FILE, encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            return []
-    return []
+def _calls_conn() -> sqlite3.Connection:
+    conn = sqlite3.connect(CALLS_DB, timeout=15)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")   # concurrent reads while writing
+    conn.execute("PRAGMA synchronous=NORMAL")  # durable enough, much faster
+    return conn
+
+
+def _init_calls_db():
+    with _calls_conn() as c:
+        c.execute(
+            """CREATE TABLE IF NOT EXISTS calls(
+                   id INTEGER PRIMARY KEY AUTOINCREMENT,
+                   time TEXT, assistant TEXT, direction TEXT, duration TEXT,
+                   turns INTEGER, outcome TEXT, transcript TEXT)"""
+        )
+        c.execute("CREATE INDEX IF NOT EXISTS idx_calls_id ON calls(id DESC)")
+        # one-time migration from the legacy calls.json (only if DB is empty)
+        n = c.execute("SELECT COUNT(*) FROM calls").fetchone()[0]
+        if n == 0 and os.path.isfile(CALLS_FILE):
+            try:
+                with open(CALLS_FILE, encoding="utf-8") as f:
+                    for r in json.load(f):
+                        c.execute(
+                            "INSERT INTO calls(time,assistant,direction,duration,turns,outcome,transcript)"
+                            " VALUES(?,?,?,?,?,?,?)",
+                            (r.get("time"), r.get("assistant"), r.get("direction"),
+                             r.get("duration"), r.get("turns"), r.get("outcome"), r.get("transcript")),
+                        )
+            except Exception:
+                pass
+
+
+_init_calls_db()
 
 
 @app.get("/api/calls")
-def list_calls():
-    return list(reversed(_read_calls()))  # newest first
+def list_calls(limit: int = 500, offset: int = 0):
+    limit = max(1, min(limit, 2000))
+    with _calls_conn() as c:
+        rows = c.execute(
+            "SELECT time,assistant,direction,duration,turns,outcome,transcript"
+            " FROM calls ORDER BY id DESC LIMIT ? OFFSET ?",
+            (limit, offset),
+        ).fetchall()
+    return [dict(r) for r in rows]
 
 
 @app.post("/api/calls")
 async def add_call(payload: dict):
-    calls = _read_calls()
-    calls.append(payload)
-    with open(CALLS_FILE, "w", encoding="utf-8") as f:
-        json.dump(calls, f, indent=2, ensure_ascii=False)
+    row = tuple(payload.get(k) for k in _CALL_FIELDS)
+    with _calls_write_lock:  # serialize writes from FastAPI's threadpool
+        with _calls_conn() as c:
+            c.execute(
+                "INSERT INTO calls(time,assistant,direction,duration,turns,outcome,transcript)"
+                " VALUES(?,?,?,?,?,?,?)",
+                row,
+            )
     return {"ok": True}
 
 

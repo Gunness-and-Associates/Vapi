@@ -26,6 +26,8 @@ env/
 # ── Runtime data — may contain real customer PII, NEVER commit to a public repo ──
 # call transcripts / outcomes, and the embedded knowledge-base index + uploads
 **/calls.json
+**/calls.db
+**/calls.db-*
 **/knowledge_index.json
 **/knowledge/
 !**/knowledge/.gitkeep
