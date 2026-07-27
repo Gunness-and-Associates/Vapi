@@ -26,6 +26,7 @@ Run with::
 import asyncio
 import json
 import os
+import re
 import time
 from datetime import datetime
 
@@ -119,9 +120,44 @@ async def classify_call(transcript: str) -> dict:
 logger.info(f"Loaded assistant '{ASSISTANT_ID}': {ASSISTANT.get('name', ASSISTANT_ID)}")
 
 
+def render_vars(text: str, variables: dict) -> str:
+    """Substitute {{ key }} and {{ key | default: "x" }} placeholders with per-call
+    values. Empty/missing values fall back to the default filter, else "" — so an
+    unfilled {{leadEmail}} never reaches the model or a tool."""
+    def repl(m):
+        key = m.group(1).strip()
+        default = m.group(2) if m.group(2) is not None else ""
+        val = variables.get(key)
+        return str(val) if val not in (None, "") else default
+
+    return re.sub(
+        r"\{\{\s*([\w.]+)\s*(?:\|\s*default:\s*[\"']?([^\"'}]*?)[\"']?\s*)?\}\}",
+        repl,
+        text or "",
+    )
+
+
 async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> None:
     """Run one voice session for the selected assistant."""
     logger.info(f"Starting bot: {ASSISTANT.get('name', ASSISTANT_ID)}")
+
+    # Per-call variables (lead name/email/phone) come from runner_args.body — set by
+    # the WebRTC offer now, and the telephony dialer later. They're substituted into
+    # the prompt + greeting, and used as the source of truth for tool args so an
+    # unfilled {{leadEmail}} can never leak out to n8n.
+    _body = getattr(runner_args, "body", None)
+    _body = _body if isinstance(_body, dict) else {}
+    call_vars = {
+        "first_name": _body.get("first_name") or _body.get("firstName") or "there",
+        "leadName": _body.get("leadName") or _body.get("first_name") or _body.get("firstName") or "",
+        "leadEmail": _body.get("leadEmail") or _body.get("email") or "",
+        "leadPhone": _body.get("leadPhone") or _body.get("phone") or "",
+    }
+    for _k, _v in _body.items():
+        call_vars.setdefault(_k, _v)
+    _present = [k for k, v in call_vars.items() if v and v != "there"]
+    if _present:
+        logger.info(f"Call variables provided: {_present}")  # keys only, no PII
 
     stt_cfg = ASSISTANT.get("stt", {})
     llm_cfg = ASSISTANT.get("llm", {})
@@ -129,7 +165,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
 
     # Knowledge base: if this assistant has an index, expose a lookup tool + nudge the prompt.
     kb_enabled = rag.index_stats(ASSISTANT_DIR).get("chunks", 0) > 0
-    system_instruction = ASSISTANT["system_prompt"]
+    system_instruction = render_vars(ASSISTANT["system_prompt"], call_vars)
     if kb_enabled:
         system_instruction += (
             "\n\nKNOWLEDGE BASE: You have documents about the program. When asked something "
@@ -243,8 +279,15 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
     def make_webhook_handler(url: str):
         async def handler(params):
             args = dict(params.arguments or {})
-            # Guard: never forward unfilled template placeholders (e.g. "{{leadEmail}}")
-            # or a malformed email — that silently mails a junk address. Ask instead.
+            # Per-call lead data is the source of truth: if the model left an arg empty
+            # or passed a raw {{placeholder}}, fill it from the CRM/call variables. So the
+            # enrolment email goes to the real address, not whatever the model guessed.
+            for k in ("leadEmail", "leadName", "leadPhone", "first_name"):
+                v = args.get(k)
+                if (v in (None, "") or (isinstance(v, str) and "{{" in v)) and call_vars.get(k):
+                    args[k] = call_vars[k]
+            # Guard: still never forward an unfilled placeholder or a malformed email —
+            # if there's genuinely no real value, ask the caller instead of mailing junk.
             if any("{{" in str(v) for v in args.values()):
                 await params.result_callback(
                     "I don't have that on file — I need to ask the caller for it before sending."
@@ -260,7 +303,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
                 async with aiohttp.ClientSession() as session:
                     async with session.post(
                         url,
-                        json=dict(params.arguments or {}),
+                        json=args,
                         timeout=aiohttp.ClientTimeout(total=15),
                     ) as resp:
                         text = await resp.text()
@@ -319,8 +362,9 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
         context.add_message(
             {
                 "role": "developer",
-                "content": ASSISTANT.get(
-                    "greeting", "Greet the person warmly and ask how you can help."
+                "content": render_vars(
+                    ASSISTANT.get("greeting", "Greet the person warmly and ask how you can help."),
+                    call_vars,
                 ),
             }
         )
