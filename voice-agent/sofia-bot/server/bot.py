@@ -35,6 +35,10 @@ from loguru import logger
 from pipecat.adapters.schemas.function_schema import FunctionSchema
 from pipecat.audio.vad.silero import SileroVADAnalyzer
 from pipecat.audio.vad.vad_analyzer import VADParams
+from pipecat.audio.turn.smart_turn.local_smart_turn_v3 import LocalSmartTurnAnalyzerV3
+from pipecat.audio.turn.smart_turn.base_smart_turn import SmartTurnParams
+from pipecat.turns.user_turn_strategies import UserTurnStrategies
+from pipecat.turns.user_stop.turn_analyzer_user_turn_stop_strategy import TurnAnalyzerUserTurnStopStrategy
 from pipecat.frames.frames import EndFrame, LLMRunFrame
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.worker import PipelineParams, PipelineWorker
@@ -106,6 +110,8 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
         settings=OpenAILLMService.Settings(
             model=llm_cfg.get("model", os.getenv("OPENAI_MODEL", "gpt-4.1")),
             system_instruction=system_instruction,
+            max_tokens=110,      # hard ceiling on reply length — keeps her from rambling
+            temperature=0.6,
         ),
     )
 
@@ -157,13 +163,26 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
         context,
         user_params=LLMUserAggregatorParams(
             vad_analyzer=SileroVADAnalyzer(
-                # stop_secs = silence before the agent decides you're done. Lower = snappier.
+                # VAD detects speech start/stop; with smart-turn on, stop_secs is the
+                # fallback ceiling, not the primary end-of-turn signal.
                 params=VADParams(
-                    stop_secs=ASSISTANT.get("vad_stop_secs", 0.5),
+                    stop_secs=ASSISTANT.get("vad_stop_secs", 0.6),
                     start_secs=0.2,
                     confidence=0.6,
                 )
-            )
+            ),
+            # Smart-turn: an on-device model decides when the caller has ACTUALLY
+            # finished, instead of a fixed silence timer. Natural turn-taking —
+            # she waits through mid-thought pauses but jumps in promptly when you're done.
+            user_turn_strategies=UserTurnStrategies(
+                stop=[
+                    TurnAnalyzerUserTurnStopStrategy(
+                        turn_analyzer=LocalSmartTurnAnalyzerV3(
+                            params=SmartTurnParams(stop_secs=2.5, max_duration_secs=8.0)
+                        )
+                    )
+                ]
+            ),
         ),
     )
 
@@ -236,6 +255,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
 
     async def end_call_handler(params):
         await params.result_callback("Okay, take care!")
+        await log_call()  # log now — on_client_disconnected may not fire after EndFrame
         await worker.queue_frames([EndFrame()])
 
     for t in tool_defs:
@@ -275,10 +295,14 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
         )
         await worker.queue_frames([LLMRunFrame()])
 
-    call_state = {"start": None}
+    call_state = {"start": None, "logged": False}
 
     async def log_call():
-        """At call end, post a record (transcript, duration, outcome) to the dashboard."""
+        """At call end, post a record (transcript, duration, outcome) to the dashboard.
+        Fires from end_call OR on_client_disconnected — guarded so it logs exactly once."""
+        if call_state.get("logged"):
+            return
+        call_state["logged"] = True
         try:
             start = call_state.get("start")
             secs = int(time.time() - start) if start else 0

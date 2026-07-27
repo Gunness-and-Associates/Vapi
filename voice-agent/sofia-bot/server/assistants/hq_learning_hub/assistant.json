@@ -19,7 +19,7 @@
     "speed": 0.9
   },
   "greeting": "Greet them warmly as Sofia from HQ Learning Hub, say in one line you're following up on the Canadian job market form they filled out, and ask if it's a good time for a quick chat.",
-  "vad_stop_secs": 0.9,
+  "vad_stop_secs": 0.6,
   "tools": [
     {
       "name": "send_enrollment_link",
