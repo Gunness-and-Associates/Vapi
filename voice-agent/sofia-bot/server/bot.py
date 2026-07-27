@@ -396,7 +396,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
                 "assistant": ASSISTANT.get("name", ASSISTANT_ID),
                 "direction": ASSISTANT.get("type", "outbound"),
                 "duration": f"{secs // 60}:{secs % 60:02d}",
-                "outcome": "completed" if turns else "no conversation",
+                "outcome": "completed" if turns else "no_conversation",
                 "turns": len(turns),
                 "transcript": transcript,
             }

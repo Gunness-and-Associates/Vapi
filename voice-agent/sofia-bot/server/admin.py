@@ -177,6 +177,8 @@ def list_assistants():
             try:
                 with open(cfg_path, encoding="utf-8") as f:
                     cfg = json.load(f)
+                tools = [t for t in cfg.get("tools", []) if t.get("enabled", True) and t.get("name") != "end_call"]
+                kb = rag.index_stats(os.path.join(ASSISTANTS_DIR, aid))
                 out.append(
                     {
                         "id": aid,
@@ -184,6 +186,8 @@ def list_assistants():
                         "type": cfg.get("type", "outbound"),
                         "llm": cfg.get("llm", {}).get("model", ""),
                         "voice": cfg.get("tts", {}).get("voice_id", ""),
+                        "tools": len(tools),
+                        "kb_chunks": kb.get("chunks", 0),
                     }
                 )
             except Exception:
@@ -380,8 +384,8 @@ def analytics():
 
         def group(col):
             rows = c.execute(
-                f"SELECT COALESCE(NULLIF({col},''),'(none)') k, COUNT(*) n FROM calls "
-                f"GROUP BY k ORDER BY n DESC"
+                f"SELECT COALESCE(NULLIF(REPLACE(LOWER({col}),' ','_'),''),'(none)') k, COUNT(*) n "
+                f"FROM calls GROUP BY k ORDER BY n DESC"
             ).fetchall()
             return [{"key": r["k"], "count": r["n"]} for r in rows]
 

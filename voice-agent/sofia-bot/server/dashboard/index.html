@@ -79,7 +79,7 @@
   .content{padding:30px 32px;flex:1}
 
   /* assistant list */
-  .listwrap{max-width:960px}
+  .listwrap{max-width:1440px}
   .listrow{display:flex;align-items:center;gap:16px;padding:16px 18px;background:var(--s1);border:1px solid var(--line);border-radius:var(--r);margin-bottom:11px;cursor:pointer;transition:.15s}
   .listrow:hover{border-color:var(--line3);background:var(--s2);transform:translateY(-2px);box-shadow:var(--sh2)}
   .listrow .avatar{width:44px;height:44px;border-radius:12px;background:linear-gradient(150deg,var(--s3),var(--raise));border:1px solid var(--line2);display:grid;place-items:center;color:var(--teal);flex:none}
@@ -169,10 +169,26 @@
   .barrow .track{background:var(--bg2);border-radius:6px;height:10px;overflow:hidden}
   .barrow .fill{display:block;height:100%;background:linear-gradient(90deg,var(--teal-deep),var(--teal));border-radius:6px}
   .barrow .n{text-align:right;font-family:Consolas,monospace;color:var(--ink);font-size:12.5px}
-  .daybars{display:flex;align-items:flex-end;gap:6px;height:120px;padding-top:8px}
+  .daybars{display:flex;align-items:flex-end;gap:10px;height:200px;padding-top:8px}
   .daybars .d{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end}
   .daybars .db{width:100%;background:linear-gradient(180deg,var(--teal2),var(--teal-deep));border-radius:4px 4px 0 0;min-height:2px}
   .daybars .dl{font-size:9px;color:var(--faint);white-space:nowrap}
+  /* assistant / tools / knowledge cards */
+  .cardgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px}
+  .acard{background:var(--s1);border:1px solid var(--line);border-radius:var(--r);padding:20px;cursor:pointer;transition:.15s;display:flex;flex-direction:column;gap:15px;box-shadow:var(--sh1)}
+  .acard:hover{border-color:var(--line3);background:var(--s2);transform:translateY(-2px);box-shadow:var(--sh2)}
+  .acard .top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .acard .av{width:46px;height:46px;border-radius:13px;background:linear-gradient(150deg,var(--s3),var(--raise));border:1px solid var(--line2);display:grid;place-items:center;color:var(--teal);flex:none}
+  .acard.in .av{color:var(--amber)}
+  .acard .av svg{width:22px;height:22px}
+  .acard .nm{font-weight:650;font-size:16px;letter-spacing:-.02em}
+  .acard .meta{font-size:12px;color:var(--faint);font-family:"SF Mono",Consolas,monospace;margin-top:4px;letter-spacing:0;word-break:break-all}
+  .acard .chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .chip{font-size:11.5px;font-weight:600;padding:6px 10px;border-radius:9px;background:var(--bg2);border:1px solid var(--line2);color:var(--muted);display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+  .chip svg{width:13px;height:13px;color:var(--faint)}
+  .chip.on{color:var(--teal);border-color:var(--teal-deep);background:var(--tglow)}
+  .chip.on svg{color:var(--teal)}
+  .chip.go{margin-left:auto;color:var(--muted)}.acard:hover .chip.go{color:var(--teal);border-color:var(--teal-deep)}
 </style>
 </head>
 <body>
@@ -244,6 +260,7 @@ function opts(a,sel){return (a||[]).map(v=>`<option ${v===sel?"selected":""}>${v
 function fmtSize(n){return n>1e6?(n/1e6).toFixed(1)+" MB":n>1e3?(n/1e3).toFixed(0)+" KB":n+" B";}
 function sentPill(s){s=(s||"").toLowerCase();const m={positive:"var(--good)",negative:"var(--danger)",neutral:"var(--muted)"}[s]||"var(--faint)";return s?`<span class="badge" style="color:${m};background:transparent;border:1px solid ${m}">${esc(s)}</span>`:"—";}
 function scorePill(s){s=(s||"").toLowerCase();const m={hot:"var(--danger)",warm:"var(--amber)",cold:"var(--muted)"}[s]||"var(--faint)";return s?`<span class="badge" style="color:${m};background:transparent;border:1px solid ${m}">${esc(s.toUpperCase())}</span>`:"—";}
+function outcomePill(o){const label=(o||"").replace(/_/g," ");const s=label.toLowerCase();const good=/optin|enrol|booked/.test(s)||(/interested/.test(s)&&!/not/.test(s));const bad=/not interested|wrong|declined|no conversation/.test(s);const col=good?"var(--good)":bad?"var(--danger)":"var(--muted)";return label?`<span class="badge" style="color:${col};background:transparent;border:1px solid ${col}">${esc(label)}</span>`:"—";}
 
 async function boot(){ try{OPTIONS=await api("/api/options");}catch(e){}
   document.querySelectorAll("#nav a").forEach(a=>a.onclick=()=>go(a.dataset.sec));
@@ -266,12 +283,14 @@ function render(){ const m=$("main");
 }
 
 function renderAssistants(m){
-  const rows=S.list.map(a=>{const t=a.type||"outbound";return `<div class="listrow ${t==='inbound'?'in':''}" onclick="openAssistant('${a.id}')">
-    <div class="avatar">${t==='inbound'?IC.in:IC.out}</div>
-    <div style="flex:1"><div class="nm">${esc(a.name||a.id)}</div><div class="meta">${a.llm||"—"} · ${(a.voice||"").slice(0,14)||"no voice"}</div></div>
-    <span class="badge ${t==='inbound'?'in':'out'}">${t.toUpperCase()}</span><span class="chev">${IC.chev}</span></div>`;}).join("");
+  const cards=S.list.map(a=>{const inb=(a.type||"outbound")==='inbound';
+    return `<div class="acard ${inb?'in':''}" onclick="openAssistant('${a.id}')">
+      <div class="top"><div class="av">${inb?IC.in:IC.out}</div><span class="badge ${inb?'in':'out'}">${(a.type||'outbound').toUpperCase()}</span></div>
+      <div><div class="nm">${esc(a.name||a.id)}</div><div class="meta">${esc(a.llm||"—")} · ${esc((a.voice||"").slice(0,12)||"no voice")}</div></div>
+      <div class="chips"><span class="chip">${IC.t_tools}${a.tools||0} tool${a.tools===1?'':'s'}</span><span class="chip ${a.kb_chunks?'on':''}">${IC.t_knowledge}${a.kb_chunks?('KB · '+a.kb_chunks):'no KB'}</span></div>
+    </div>`;}).join("");
   m.innerHTML=topbar("Assistants",`<button class="btn-primary" onclick="newAssistant()">${IC.plus} Create Assistant</button>`)+
-    `<div class="content"><div class="listwrap">${ S.list.length ? rows :
+    `<div class="content"><div class="listwrap">${ S.list.length ? `<div class="cardgrid">${cards}</div>` :
       `<div class="empty"><div class="big">${IC.bot2}</div><h3>No assistants yet</h3><div>Create your first voice agent — pick a type, choose models, write the prompt. Takes a couple minutes.</div><br><button class="btn-primary" onclick="newAssistant()">${IC.plus} Create Assistant</button></div>`}</div></div>`;
 }
 window.newAssistant=()=>$("overlay").classList.add("show");
@@ -407,17 +426,24 @@ window.reindexKB=async()=>{ toast("Re-indexing…"); try{const s=await api("/api
 window.delKB=async(name)=>{await api("/api/assistants/"+S.current.id+"/knowledge/"+encodeURIComponent(name),{method:"DELETE"});loadKB();};
 
 function renderLaunch(m,title,sub,tab){
-  const rows=S.list.map(a=>`<tr onclick="openTab('${a.id}','${tab}')"><td><b>${esc(a.name||a.id)}</b></td><td><span class="badge ${(a.type||'outbound')==='inbound'?'in':'out'}">${(a.type||'outbound').toUpperCase()}</span></td><td style="color:var(--faint)">Open →</td></tr>`).join("");
-  m.innerHTML=topbar(title)+`<div class="content"><div class="listwrap"><p class="sec-d">${sub}</p>
-    <div class="tablecard"><table><thead><tr><th>Assistant</th><th>Type</th><th></th></tr></thead><tbody>${rows||'<tr><td colspan=3 style="color:var(--faint)">No assistants yet.</td></tr>'}</tbody></table></div></div></div>`;
+  const cards=S.list.map(a=>{const inb=(a.type||"outbound")==='inbound';
+    const metric = tab==='knowledge'
+      ? `<span class="chip ${a.kb_chunks?'on':''}">${IC.t_knowledge}${a.kb_chunks?(a.kb_chunks+' passages indexed'):'No documents'}</span>`
+      : `<span class="chip ${a.tools?'on':''}">${IC.t_tools}${a.tools||0} tool${a.tools===1?'':'s'}</span>`;
+    return `<div class="acard ${inb?'in':''}" onclick="openTab('${a.id}','${tab}')">
+      <div class="top"><div class="av">${inb?IC.in:IC.out}</div><span class="badge ${inb?'in':'out'}">${(a.type||'outbound').toUpperCase()}</span></div>
+      <div><div class="nm">${esc(a.name||a.id)}</div><div class="meta">${esc(a.llm||"—")}</div></div>
+      <div class="chips">${metric}<span class="chip go">Open ${IC.chev}</span></div>
+    </div>`;}).join("");
+  m.innerHTML=topbar(title)+`<div class="content"><div class="listwrap"><p class="sec-d">${sub}</p>${ S.list.length? `<div class="cardgrid">${cards}</div>`:'<div class="empty"><div class="big">'+IC.bot2+'</div><h3>No assistants yet</h3><div>Create an assistant first, then manage its '+esc(title.toLowerCase())+' here.</div></div>'}</div></div>`;
 }
 window.openTab=async(id,tab)=>{S.current=await api("/api/assistants/"+id);S.isNew=false;S.tab=tab;render();};
 async function renderCalls(m){ m.innerHTML=topbar("Call Logs")+`<div class="content"><div class="listwrap"><p class="sec-d">Transcripts, duration and outcomes from your agents' calls — click a row to read the transcript.</p><div id="cb"><div class="hint">Loading…</div></div></div></div>`;
   try{const calls=await api("/api/calls"); S.calls=calls;
-    $("cb").innerHTML=calls.length?`<div class="tablecard"><table><thead><tr><th>Time</th><th>Assistant</th><th>Dir</th><th>Duration</th><th>Outcome</th><th>Sentiment</th><th>Score</th></tr></thead><tbody>${calls.map((c,i)=>`<tr onclick="showTranscript(${i})"><td>${esc(c.time||"—")}</td><td>${esc(c.assistant||"—")}</td><td><span class="badge ${(c.direction||'outbound')==='inbound'?'in':'out'}">${(c.direction||'—').toUpperCase()}</span></td><td>${esc(c.duration||"—")}</td><td>${esc((c.outcome||"—").replace(/_/g," "))}</td><td>${sentPill(c.sentiment)}</td><td>${scorePill(c.lead_score)}</td></tr>`).join("")}</tbody></table></div>`:`<div class="empty"><div class="big">${IC.phone}</div><h3>No calls yet</h3><div>Once your agents start talking, every call shows up here with its transcript, outcome and sentiment.</div></div>`;
+    $("cb").innerHTML=calls.length?`<div class="tablecard"><table><thead><tr><th>Time</th><th>Assistant</th><th>Dir</th><th>Duration</th><th>Outcome</th><th>Sentiment</th><th>Score</th></tr></thead><tbody>${calls.map((c,i)=>`<tr onclick="showTranscript(${i})"><td>${esc(c.time||"—")}</td><td>${esc(c.assistant||"—")}</td><td><span class="badge ${(c.direction||'outbound')==='inbound'?'in':'out'}">${(c.direction||'—').toUpperCase()}</span></td><td>${esc(c.duration||"—")}</td><td>${outcomePill(c.outcome)}</td><td>${sentPill(c.sentiment)}</td><td>${scorePill(c.lead_score)}</td></tr>`).join("")}</tbody></table></div>`:`<div class="empty"><div class="big">${IC.phone}</div><h3>No calls yet</h3><div>Once your agents start talking, every call shows up here with its transcript, outcome and sentiment.</div></div>`;
   }catch(e){$("cb").innerHTML=`<div class="empty">Couldn't load calls.</div>`;} }
 async function renderAnalytics(m){
-  m.innerHTML=topbar("Analytics")+`<div class="content"><div class="listwrap" style="max-width:1000px"><div id="ab"><div class="hint">Loading…</div></div></div></div>`;
+  m.innerHTML=topbar("Analytics")+`<div class="content"><div class="listwrap"><div id="ab"><div class="hint">Loading…</div></div></div></div>`;
   try{
     const a=await api("/api/analytics");
     if(!a.total){ $("ab").innerHTML=`<div class="empty"><div class="big">${IC.analytics}</div><h3>No data yet</h3><div>Analytics show up once your agents start making calls.</div></div>`; return; }
