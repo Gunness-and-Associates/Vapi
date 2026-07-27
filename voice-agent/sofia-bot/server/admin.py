@@ -30,6 +30,7 @@ load_dotenv()  # so the embedding step has OPENAI_API_KEY
 BASE = os.path.dirname(__file__)
 ASSISTANTS_DIR = os.path.join(BASE, "assistants")
 DASHBOARD_DIR = os.path.join(BASE, "dashboard")
+CLIENT_DIR = os.path.join(BASE, "..", "client")  # branded test client, served at /test
 os.makedirs(ASSISTANTS_DIR, exist_ok=True)
 
 app = FastAPI(title="HQ Lead Engine — Assistant Manager")
@@ -356,5 +357,10 @@ async def add_call(payload: dict):
 
 
 # Serve the dashboard (mounted last so /api/* wins)
+# Branded test client — mounted BEFORE "/" so /test wins. Always available while
+# the dashboard is up, so the "Talk to test" button never dead-ends on a missing server.
+if os.path.isdir(CLIENT_DIR):
+    app.mount("/test", StaticFiles(directory=CLIENT_DIR, html=True), name="test")
+
 if os.path.isdir(DASHBOARD_DIR):
     app.mount("/", StaticFiles(directory=DASHBOARD_DIR, html=True), name="dashboard")

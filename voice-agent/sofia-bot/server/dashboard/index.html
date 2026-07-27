@@ -284,7 +284,7 @@ function renderEditor(m){
          </div>
          <div class="rail-actions">
            <button class="btn-primary" onclick="save()">${S.isNew?"Create assistant":"Save changes"}</button>
-           <button class="btn-test" onclick="window.open('http://localhost:8000','_blank')">${IC.play} Talk to test</button>
+           <button class="btn-test" onclick="window.open('/test/','_blank')">${IC.play} Talk to test</button>
            ${S.isNew?"":`<button class="btn-danger" onclick="del()">${IC.trash} Delete</button>`}
          </div>
        </aside>
