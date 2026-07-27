@@ -40,6 +40,18 @@ def extract_text(path: str) -> str:
 
             d = docx.Document(path)
             return "\n".join(p.text for p in d.paragraphs)
+        if ext in ("xlsx", "xlsm"):
+            import openpyxl
+
+            wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+            out = []
+            for ws in wb.worksheets:
+                out.append(f"# {ws.title}")
+                for row in ws.iter_rows(values_only=True):
+                    cells = [str(c).strip() for c in row if c is not None and str(c).strip()]
+                    if cells:
+                        out.append(" | ".join(cells))
+            return "\n".join(out)
     except Exception as e:  # noqa: BLE001
         print(f"[rag] extract failed for {path}: {e}")
     return ""
