@@ -225,6 +225,8 @@ function esc(s){return (s||"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":
 function escA(s){return (s||"").replace(/"/g,"&quot;").replace(/</g,"&lt;");}
 function opts(a,sel){return (a||[]).map(v=>`<option ${v===sel?"selected":""}>${v}</option>`).join("");}
 function fmtSize(n){return n>1e6?(n/1e6).toFixed(1)+" MB":n>1e3?(n/1e3).toFixed(0)+" KB":n+" B";}
+function sentPill(s){s=(s||"").toLowerCase();const m={positive:"var(--good)",negative:"var(--danger)",neutral:"var(--muted)"}[s]||"var(--faint)";return s?`<span class="badge" style="color:${m};background:transparent;border:1px solid ${m}">${esc(s)}</span>`:"—";}
+function scorePill(s){s=(s||"").toLowerCase();const m={hot:"var(--danger)",warm:"var(--amber)",cold:"var(--muted)"}[s]||"var(--faint)";return s?`<span class="badge" style="color:${m};background:transparent;border:1px solid ${m}">${esc(s.toUpperCase())}</span>`:"—";}
 
 async function boot(){ try{OPTIONS=await api("/api/options");}catch(e){}
   document.querySelectorAll("#nav a").forEach(a=>a.onclick=()=>go(a.dataset.sec));
@@ -394,9 +396,15 @@ function renderLaunch(m,title,sub,tab){
 window.openTab=async(id,tab)=>{S.current=await api("/api/assistants/"+id);S.isNew=false;S.tab=tab;render();};
 async function renderCalls(m){ m.innerHTML=topbar("Call Logs")+`<div class="content"><div class="listwrap"><p class="sec-d">Transcripts, duration and outcomes from your agents' calls — click a row to read the transcript.</p><div id="cb"><div class="hint">Loading…</div></div></div></div>`;
   try{const calls=await api("/api/calls"); S.calls=calls;
-    $("cb").innerHTML=calls.length?`<div class="tablecard"><table><thead><tr><th>Time</th><th>Assistant</th><th>Direction</th><th>Duration</th><th>Turns</th><th>Outcome</th></tr></thead><tbody>${calls.map((c,i)=>`<tr onclick="showTranscript(${i})"><td>${esc(c.time||"—")}</td><td>${esc(c.assistant||"—")}</td><td><span class="badge ${(c.direction||'outbound')==='inbound'?'in':'out'}">${(c.direction||'—').toUpperCase()}</span></td><td>${esc(c.duration||"—")}</td><td>${esc(String(c.turns??"—"))}</td><td>${esc(c.outcome||"—")}</td></tr>`).join("")}</tbody></table></div>`:`<div class="empty"><div class="big">${IC.phone}</div><h3>No calls yet</h3><div>Once your agents start talking, every call shows up here with its transcript and outcome.</div></div>`;
+    $("cb").innerHTML=calls.length?`<div class="tablecard"><table><thead><tr><th>Time</th><th>Assistant</th><th>Dir</th><th>Duration</th><th>Outcome</th><th>Sentiment</th><th>Score</th></tr></thead><tbody>${calls.map((c,i)=>`<tr onclick="showTranscript(${i})"><td>${esc(c.time||"—")}</td><td>${esc(c.assistant||"—")}</td><td><span class="badge ${(c.direction||'outbound')==='inbound'?'in':'out'}">${(c.direction||'—').toUpperCase()}</span></td><td>${esc(c.duration||"—")}</td><td>${esc((c.outcome||"—").replace(/_/g," "))}</td><td>${sentPill(c.sentiment)}</td><td>${scorePill(c.lead_score)}</td></tr>`).join("")}</tbody></table></div>`:`<div class="empty"><div class="big">${IC.phone}</div><h3>No calls yet</h3><div>Once your agents start talking, every call shows up here with its transcript, outcome and sentiment.</div></div>`;
   }catch(e){$("cb").innerHTML=`<div class="empty">Couldn't load calls.</div>`;} }
-window.showTranscript=(i)=>{ const c=(S.calls||[])[i]; if(!c)return; $("tTitle").textContent=(c.assistant||"Call")+" · "+(c.time||""); $("tBody").textContent=c.transcript||"(no transcript captured)"; $("tOverlay").classList.add("show"); };
+window.showTranscript=(i)=>{ const c=(S.calls||[])[i]; if(!c)return; $("tTitle").textContent=(c.assistant||"Call")+" · "+(c.time||"");
+  const chips=[c.outcome?`<span class="badge draft">${esc((c.outcome||"").replace(/_/g," "))}</span>`:"", c.sentiment?sentPill(c.sentiment):"", c.lead_score?scorePill(c.lead_score):""].filter(Boolean).join(" ");
+  const kv=(k,v)=>v?`<div style="margin-top:8px"><span style="color:var(--faint);font-size:11px;text-transform:uppercase;letter-spacing:.05em">${k}</span><div style="font-size:13px;margin-top:2px">${esc(v)}</div></div>`:"";
+  const panel = (chips||c.summary||c.next_step||c.objection)?`<div style="background:var(--s2);border:1px solid var(--line2);border-radius:12px;padding:14px 16px;margin-bottom:14px">${chips?`<div style="display:flex;gap:6px;flex-wrap:wrap">${chips}</div>`:""}${kv("Summary",c.summary)}${kv("Next step",c.next_step)}${kv("Objection",c.objection)}</div>`:"";
+  const tx = esc(c.transcript||"(no transcript captured)").replace(/\n/g,"<br>");
+  $("tBody").innerHTML = panel + `<div style="white-space:pre-wrap">${tx}</div>`;
+  $("tOverlay").classList.add("show"); };
 boot();
 </script>
 </body>

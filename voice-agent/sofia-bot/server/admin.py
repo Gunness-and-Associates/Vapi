@@ -292,7 +292,11 @@ async def delete_knowledge(aid: str, filename: str):
 CALLS_DB = os.path.join(BASE, "calls.db")
 CALLS_FILE = os.path.join(BASE, "calls.json")  # legacy — migrated in once
 _calls_write_lock = threading.Lock()
-_CALL_FIELDS = ("time", "assistant", "direction", "duration", "turns", "outcome", "transcript")
+_CALL_FIELDS = (
+    "time", "assistant", "direction", "duration", "turns", "outcome",
+    "sentiment", "lead_score", "summary", "next_step", "objection", "transcript",
+)
+_EXTRA_COLS = ("sentiment", "lead_score", "summary", "next_step", "objection")
 
 
 def _calls_conn() -> sqlite3.Connection:
@@ -309,9 +313,16 @@ def _init_calls_db():
             """CREATE TABLE IF NOT EXISTS calls(
                    id INTEGER PRIMARY KEY AUTOINCREMENT,
                    time TEXT, assistant TEXT, direction TEXT, duration TEXT,
-                   turns INTEGER, outcome TEXT, transcript TEXT)"""
+                   turns INTEGER, outcome TEXT, transcript TEXT,
+                   sentiment TEXT, lead_score TEXT, summary TEXT,
+                   next_step TEXT, objection TEXT)"""
         )
         c.execute("CREATE INDEX IF NOT EXISTS idx_calls_id ON calls(id DESC)")
+        # migrate older DBs that predate the intelligence columns
+        existing = {r[1] for r in c.execute("PRAGMA table_info(calls)").fetchall()}
+        for col in _EXTRA_COLS:
+            if col not in existing:
+                c.execute(f"ALTER TABLE calls ADD COLUMN {col} TEXT")
         # one-time migration from the legacy calls.json (only if DB is empty)
         n = c.execute("SELECT COUNT(*) FROM calls").fetchone()[0]
         if n == 0 and os.path.isfile(CALLS_FILE):
@@ -334,10 +345,10 @@ _init_calls_db()
 @app.get("/api/calls")
 def list_calls(limit: int = 500, offset: int = 0):
     limit = max(1, min(limit, 2000))
+    cols = ",".join(_CALL_FIELDS)
     with _calls_conn() as c:
         rows = c.execute(
-            "SELECT time,assistant,direction,duration,turns,outcome,transcript"
-            " FROM calls ORDER BY id DESC LIMIT ? OFFSET ?",
+            f"SELECT {cols} FROM calls ORDER BY id DESC LIMIT ? OFFSET ?",
             (limit, offset),
         ).fetchall()
     return [dict(r) for r in rows]
@@ -345,14 +356,12 @@ def list_calls(limit: int = 500, offset: int = 0):
 
 @app.post("/api/calls")
 async def add_call(payload: dict):
+    cols = ",".join(_CALL_FIELDS)
+    ph = ",".join("?" * len(_CALL_FIELDS))
     row = tuple(payload.get(k) for k in _CALL_FIELDS)
     with _calls_write_lock:  # serialize writes from FastAPI's threadpool
         with _calls_conn() as c:
-            c.execute(
-                "INSERT INTO calls(time,assistant,direction,duration,turns,outcome,transcript)"
-                " VALUES(?,?,?,?,?,?,?)",
-                row,
-            )
+            c.execute(f"INSERT INTO calls({cols}) VALUES({ph})", row)
     return {"ok": True}
 
 

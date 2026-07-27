@@ -35,10 +35,6 @@ from loguru import logger
 from pipecat.adapters.schemas.function_schema import FunctionSchema
 from pipecat.audio.vad.silero import SileroVADAnalyzer
 from pipecat.audio.vad.vad_analyzer import VADParams
-from pipecat.audio.turn.smart_turn.local_smart_turn_v3 import LocalSmartTurnAnalyzerV3
-from pipecat.audio.turn.smart_turn.base_smart_turn import SmartTurnParams
-from pipecat.turns.user_turn_strategies import UserTurnStrategies
-from pipecat.turns.user_stop.turn_analyzer_user_turn_stop_strategy import TurnAnalyzerUserTurnStopStrategy
 from pipecat.frames.frames import EndFrame, LLMRunFrame
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.worker import PipelineParams, PipelineWorker
@@ -77,6 +73,49 @@ def load_assistant(assistant_id: str) -> dict:
 ASSISTANT = load_assistant(ASSISTANT_ID)
 ASSISTANT_DIR = os.path.join(_ASSISTANTS_DIR, ASSISTANT_ID)
 CALLS_ENDPOINT = os.getenv("CALLS_ENDPOINT", "http://localhost:8080/api/calls")
+CLASSIFY_MODEL = os.getenv("CLASSIFY_MODEL", "gpt-4o-mini")
+
+
+async def classify_call(transcript: str) -> dict:
+    """LLM pass over the transcript at call end → structured outcome / sentiment /
+    lead score / summary / next step / objection. Best-effort: returns {} on any
+    failure so call logging never breaks."""
+    if not transcript.strip():
+        return {}
+    schema = (
+        '{"outcome": one of ["whatsapp_optin","interested","advisor_booked","enrolled",'
+        '"callback_requested","not_interested","wrong_number","no_conversation","other"],'
+        ' "sentiment": one of ["positive","neutral","negative"],'
+        ' "lead_score": one of ["hot","warm","cold"],'
+        ' "summary": "one or two sentences", "next_step": "short phrase",'
+        ' "objection": "main objection, or empty string"}'
+    )
+    sys = (
+        "You analyze outbound sales-call transcripts for HQ Learning Hub, a Canadian "
+        "job-market training program. The agent's goal is to move the lead onto WhatsApp, "
+        "send the enrolment link, or book an advisor. Read the transcript and return ONLY "
+        "JSON matching: " + schema
+    )
+    try:
+        from openai import AsyncOpenAI
+
+        client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        resp = await client.chat.completions.create(
+            model=CLASSIFY_MODEL,
+            messages=[
+                {"role": "system", "content": sys},
+                {"role": "user", "content": transcript[:6000]},
+            ],
+            response_format={"type": "json_object"},
+            max_tokens=250,
+            temperature=0,
+        )
+        data = json.loads(resp.choices[0].message.content)
+        keys = ("outcome", "sentiment", "lead_score", "summary", "next_step", "objection")
+        return {k: data[k] for k in keys if data.get(k)}
+    except Exception as e:
+        logger.error(f"classify_call failed: {e}")
+        return {}
 logger.info(f"Loaded assistant '{ASSISTANT_ID}': {ASSISTANT.get('name', ASSISTANT_ID)}")
 
 
@@ -110,7 +149,8 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
         settings=OpenAILLMService.Settings(
             model=llm_cfg.get("model", os.getenv("OPENAI_MODEL", "gpt-4.1")),
             system_instruction=system_instruction,
-            max_tokens=110,      # hard ceiling on reply length — keeps her from rambling
+            max_tokens=220,      # ceiling only — brevity comes from the prompt; high enough
+                                 # that a normal reply never truncates mid-sentence
             temperature=0.6,
         ),
     )
@@ -163,25 +203,14 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
         context,
         user_params=LLMUserAggregatorParams(
             vad_analyzer=SileroVADAnalyzer(
-                # VAD detects speech start/stop; with smart-turn on, stop_secs is the
-                # fallback ceiling, not the primary end-of-turn signal.
+                # Tuned against false barge-in: require sustained speech (start_secs) and
+                # higher confidence to interrupt, so echo / background noise doesn't cut
+                # her off mid-sentence. stop_secs = silence before she's sure you're done.
                 params=VADParams(
-                    stop_secs=ASSISTANT.get("vad_stop_secs", 0.6),
-                    start_secs=0.2,
-                    confidence=0.6,
+                    stop_secs=ASSISTANT.get("vad_stop_secs", 0.8),
+                    start_secs=0.3,
+                    confidence=0.7,
                 )
-            ),
-            # Smart-turn: an on-device model decides when the caller has ACTUALLY
-            # finished, instead of a fixed silence timer. Natural turn-taking —
-            # she waits through mid-thought pauses but jumps in promptly when you're done.
-            user_turn_strategies=UserTurnStrategies(
-                stop=[
-                    TurnAnalyzerUserTurnStopStrategy(
-                        turn_analyzer=LocalSmartTurnAnalyzerV3(
-                            params=SmartTurnParams(stop_secs=2.5, max_duration_secs=8.0)
-                        )
-                    )
-                ]
             ),
         ),
     )
@@ -254,7 +283,9 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
         return handler
 
     async def end_call_handler(params):
-        await params.result_callback("Okay, take care!")
+        # End silently — the agent already said its goodbye out loud in its own turn,
+        # so the tool must NOT add a second one (that caused the double "take care").
+        await params.result_callback("")
         await log_call()  # log now — on_client_disconnected may not fire after EndFrame
         await worker.queue_frames([EndFrame()])
 
@@ -325,6 +356,9 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
                 "turns": len(turns),
                 "transcript": transcript,
             }
+            # End-of-call intelligence: classify outcome/sentiment/score/summary.
+            if turns:
+                record.update(await classify_call(transcript))
             async with aiohttp.ClientSession() as s:
                 await s.post(CALLS_ENDPOINT, json=record, timeout=aiohttp.ClientTimeout(total=8))
             logger.info(f"Logged call: {secs}s, {len(turns)} turns")
