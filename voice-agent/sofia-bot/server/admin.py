@@ -365,6 +365,51 @@ async def add_call(payload: dict):
     return {"ok": True}
 
 
+@app.get("/api/analytics")
+def analytics():
+    """Aggregate call stats for the Analytics page. SQL GROUP BY so it stays fast at volume."""
+    def dur_secs(d):
+        try:
+            m, s = str(d).split(":")
+            return int(m) * 60 + int(s)
+        except Exception:
+            return 0
+
+    with _calls_conn() as c:
+        total = c.execute("SELECT COUNT(*) FROM calls").fetchone()[0]
+
+        def group(col):
+            rows = c.execute(
+                f"SELECT COALESCE(NULLIF({col},''),'(none)') k, COUNT(*) n FROM calls "
+                f"GROUP BY k ORDER BY n DESC"
+            ).fetchall()
+            return [{"key": r["k"], "count": r["n"]} for r in rows]
+
+        by_outcome = group("outcome")
+        by_sentiment = group("sentiment")
+        by_score = group("lead_score")
+        avg_turns = c.execute("SELECT AVG(turns) FROM calls").fetchone()[0] or 0
+        by_day = [
+            {"day": r["d"], "count": r["n"]}
+            for r in c.execute(
+                "SELECT substr(time,1,10) d, COUNT(*) n FROM calls "
+                "GROUP BY d ORDER BY d DESC LIMIT 14"
+            ).fetchall()
+        ][::-1]
+        durations = [r["duration"] for r in c.execute("SELECT duration FROM calls").fetchall()]
+
+    ds = [dur_secs(d) for d in durations if d]
+    return {
+        "total": total,
+        "avg_turns": round(avg_turns, 1),
+        "avg_duration_secs": (sum(ds) // len(ds)) if ds else 0,
+        "by_outcome": by_outcome,
+        "by_sentiment": by_sentiment,
+        "by_score": by_score,
+        "by_day": by_day,
+    }
+
+
 # Serve the dashboard (mounted last so /api/* wins)
 # Branded test client — mounted BEFORE "/" so /test wins. Always available while
 # the dashboard is up, so the "Talk to test" button never dead-ends on a missing server.

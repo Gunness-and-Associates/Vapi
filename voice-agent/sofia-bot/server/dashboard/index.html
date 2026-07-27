@@ -158,6 +158,21 @@
   .choice .t{font-weight:700;margin:14px 0 5px;font-size:15px}.choice .d{font-size:12px;color:var(--faint);line-height:1.55}
   .modal .cancel{margin-top:20px;background:transparent;color:var(--muted);border:1px solid var(--line2);padding:9px 16px}.modal .cancel:hover{background:var(--s2);color:var(--ink)}
   .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(90px);background:var(--good);color:#042018;padding:13px 24px;border-radius:12px;font-weight:700;transition:transform .32s cubic-bezier(.34,1.3,.6,1);z-index:40;box-shadow:var(--sh2)}.toast.show{transform:translateX(-50%) translateY(0)}.toast.err{background:var(--danger);color:#2a0f08}
+  /* analytics */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:26px}
+  .stat{background:var(--s1);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;box-shadow:var(--sh1)}
+  .stat .v{font-size:26px;font-weight:800;letter-spacing:-.02em;font-family:"SF Mono",Consolas,monospace;color:var(--ink)}
+  .stat .k{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;margin-top:5px;font-weight:600}
+  .bars{display:flex;flex-direction:column;gap:11px}
+  .barrow{display:grid;grid-template-columns:120px 1fr 40px;align-items:center;gap:12px;font-size:13px}
+  .barrow .lab{color:var(--muted);text-transform:capitalize;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .barrow .track{background:var(--bg2);border-radius:6px;height:10px;overflow:hidden}
+  .barrow .fill{display:block;height:100%;background:linear-gradient(90deg,var(--teal-deep),var(--teal));border-radius:6px}
+  .barrow .n{text-align:right;font-family:Consolas,monospace;color:var(--ink);font-size:12.5px}
+  .daybars{display:flex;align-items:flex-end;gap:6px;height:120px;padding-top:8px}
+  .daybars .d{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end}
+  .daybars .db{width:100%;background:linear-gradient(180deg,var(--teal2),var(--teal-deep));border-radius:4px 4px 0 0;min-height:2px}
+  .daybars .dl{font-size:9px;color:var(--faint);white-space:nowrap}
 </style>
 </head>
 <body>
@@ -173,6 +188,7 @@
       <a data-sec="knowledge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg> Knowledge Base</a>
       <div class="lbl">Monitor</div>
       <a data-sec="calls"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg> Call Logs</a>
+      <a data-sec="analytics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></svg> Analytics</a>
     </nav>
     <div class="foot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Login &amp; teams — coming soon</div>
   </aside>
@@ -215,6 +231,7 @@ const IC={
   t_tools:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
   t_knowledge:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>',
   t_advanced:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+  analytics:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></svg>',
 };
 let OPTIONS={llm:{openai:["gpt-4.1"]},stt:{deepgram:["nova-3"]},tts:{elevenlabs:["eleven_flash_v2_5"]}};
 let S={section:"assistants",list:[],current:null,isNew:false,tab:"model"};
@@ -245,6 +262,7 @@ function render(){ const m=$("main");
   if(S.section==="tools") return renderLaunch(m,"Tools","Tools let agents take actions mid-call (send a link, book, end call) via n8n webhooks — managed inside each assistant.","tools");
   if(S.section==="knowledge") return renderLaunch(m,"Knowledge Base","Upload PDFs/docs per assistant so it can answer from them, indexed automatically for mid-call lookup.","knowledge");
   if(S.section==="calls") return renderCalls(m);
+  if(S.section==="analytics") return renderAnalytics(m);
 }
 
 function renderAssistants(m){
@@ -398,6 +416,28 @@ async function renderCalls(m){ m.innerHTML=topbar("Call Logs")+`<div class="cont
   try{const calls=await api("/api/calls"); S.calls=calls;
     $("cb").innerHTML=calls.length?`<div class="tablecard"><table><thead><tr><th>Time</th><th>Assistant</th><th>Dir</th><th>Duration</th><th>Outcome</th><th>Sentiment</th><th>Score</th></tr></thead><tbody>${calls.map((c,i)=>`<tr onclick="showTranscript(${i})"><td>${esc(c.time||"—")}</td><td>${esc(c.assistant||"—")}</td><td><span class="badge ${(c.direction||'outbound')==='inbound'?'in':'out'}">${(c.direction||'—').toUpperCase()}</span></td><td>${esc(c.duration||"—")}</td><td>${esc((c.outcome||"—").replace(/_/g," "))}</td><td>${sentPill(c.sentiment)}</td><td>${scorePill(c.lead_score)}</td></tr>`).join("")}</tbody></table></div>`:`<div class="empty"><div class="big">${IC.phone}</div><h3>No calls yet</h3><div>Once your agents start talking, every call shows up here with its transcript, outcome and sentiment.</div></div>`;
   }catch(e){$("cb").innerHTML=`<div class="empty">Couldn't load calls.</div>`;} }
+async function renderAnalytics(m){
+  m.innerHTML=topbar("Analytics")+`<div class="content"><div class="listwrap" style="max-width:1000px"><div id="ab"><div class="hint">Loading…</div></div></div></div>`;
+  try{
+    const a=await api("/api/analytics");
+    if(!a.total){ $("ab").innerHTML=`<div class="empty"><div class="big">${IC.analytics}</div><h3>No data yet</h3><div>Analytics show up once your agents start making calls.</div></div>`; return; }
+    const mm=Math.floor(a.avg_duration_secs/60), ss=String(a.avg_duration_secs%60).padStart(2,"0");
+    const tiles=[["Total calls",a.total],["Avg duration",mm+":"+ss],["Avg turns",a.avg_turns]];
+    const bars=(arr)=>{ const max=Math.max(1,...arr.map(x=>x.count)); return `<div class="bars">${arr.map(x=>`<div class="barrow"><span class="lab">${esc((x.key||"—").replace(/_/g," "))}</span><span class="track"><span class="fill" style="width:${Math.round(x.count/max*100)}%"></span></span><span class="n">${x.count}</span></div>`).join("")}</div>`; };
+    const maxDay=Math.max(1,...a.by_day.map(d=>d.count));
+    const days=a.by_day.length?`<div class="daybars">${a.by_day.map(d=>`<div class="d" title="${esc(d.day)}: ${d.count}"><div class="db" style="height:${Math.round(d.count/maxDay*100)}%"></div><span class="dl">${esc((d.day||"").slice(5))}</span></div>`).join("")}</div>`:`<div class="hint">No dated calls yet.</div>`;
+    $("ab").innerHTML=`
+      <div class="stats">${tiles.map(t=>`<div class="stat"><div class="v">${esc(String(t[1]))}</div><div class="k">${t[0]}</div></div>`).join("")}</div>
+      <div class="row" style="align-items:start">
+        <div class="sec"><div class="eyebrow">Outcomes</div><div class="card">${bars(a.by_outcome)}</div></div>
+        <div class="sec"><div class="eyebrow">Sentiment</div><div class="card">${bars(a.by_sentiment)}</div></div>
+      </div>
+      <div class="row" style="align-items:start">
+        <div class="sec"><div class="eyebrow">Lead score</div><div class="card">${bars(a.by_score)}</div></div>
+        <div class="sec"><div class="eyebrow">Calls per day</div><div class="card">${days}</div></div>
+      </div>`;
+  }catch(e){ $("ab").innerHTML=`<div class="empty">Couldn't load analytics.</div>`; }
+}
 window.showTranscript=(i)=>{ const c=(S.calls||[])[i]; if(!c)return; $("tTitle").textContent=(c.assistant||"Call")+" · "+(c.time||"");
   const chips=[c.outcome?`<span class="badge draft">${esc((c.outcome||"").replace(/_/g," "))}</span>`:"", c.sentiment?sentPill(c.sentiment):"", c.lead_score?scorePill(c.lead_score):""].filter(Boolean).join(" ");
   const kv=(k,v)=>v?`<div style="margin-top:8px"><span style="color:var(--faint);font-size:11px;text-transform:uppercase;letter-spacing:.05em">${k}</span><div style="font-size:13px;margin-top:2px">${esc(v)}</div></div>`:"";
