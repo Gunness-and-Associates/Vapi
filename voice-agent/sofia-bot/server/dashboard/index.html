@@ -189,6 +189,44 @@
   .chip.on{color:var(--teal);border-color:var(--teal-deep);background:var(--tglow)}
   .chip.on svg{color:var(--teal)}
   .chip.go{margin-left:auto;color:var(--muted)}.acard:hover .chip.go{color:var(--teal);border-color:var(--teal-deep)}
+
+  /* ============ GLASSMORPHISM SKIN (overrides the flat surfaces above) ============ */
+  :root{ --glass:rgba(255,255,255,.045); --glass-2:rgba(255,255,255,.07); --glass-line:rgba(255,255,255,.11);
+         --glass-blur:blur(18px) saturate(1.35); --rr:20px; }
+  /* Ambient colored light so the frosted glass has something to refract */
+  body{ background:
+    radial-gradient(760px 520px at 10% 4%, rgba(34,205,174,.16), transparent 55%),
+    radial-gradient(900px 620px at 92% 8%, rgba(96,132,255,.13), transparent 55%),
+    radial-gradient(720px 720px at 78% 104%, rgba(34,205,174,.10), transparent 55%),
+    radial-gradient(620px 520px at 6% 100%, rgba(150,110,255,.09), transparent 55%),
+    #05090a; }
+  /* Frosted panels */
+  .card,.acard,.stat,.tablecard,.tool,.est,.summary,.modal,.choice,.drop,.fileitem{
+    background:var(--glass)!important; border:1px solid var(--glass-line)!important;
+    backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
+    border-radius:var(--rr); box-shadow:0 1px 0 rgba(255,255,255,.06) inset, 0 10px 30px rgba(0,0,0,.35);
+  }
+  .card::before{display:none}
+  .summary{padding:0;overflow:hidden}.summary .r{background:transparent;border-top:1px solid rgba(255,255,255,.05)}
+  .acard:hover,.choice:hover{background:var(--glass-2)!important;border-color:rgba(34,205,174,.4)!important;transform:translateY(-3px);
+    box-shadow:0 1px 0 rgba(255,255,255,.08) inset,0 16px 40px rgba(0,0,0,.45),0 0 0 1px rgba(34,205,174,.15)}
+  .stat .v{background:linear-gradient(180deg,#eafff9,var(--teal));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  /* Sidebar + topbar as glass */
+  .side{background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.015))!important;
+    border-right:1px solid var(--glass-line);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+  .brand,.side .foot{border-color:rgba(255,255,255,.07)}
+  .nav a.active{background:linear-gradient(90deg,rgba(34,205,174,.22),rgba(34,205,174,.06))!important;box-shadow:0 2px 14px rgba(34,205,174,.18)}
+  .topbar{background:rgba(10,15,15,.55)!important;backdrop-filter:blur(22px) saturate(1.3);-webkit-backdrop-filter:blur(22px) saturate(1.3);border-bottom:1px solid var(--glass-line)}
+  .brand .logo{border-radius:14px;box-shadow:0 6px 20px rgba(34,205,174,.5),inset 0 1px 0 rgba(255,255,255,.4)}
+  /* Inputs / chips / bars glassy */
+  input,select,textarea{background:rgba(255,255,255,.04)!important;border:1px solid var(--glass-line)!important;border-radius:12px}
+  .chip,.seg{background:rgba(255,255,255,.05)!important;border:1px solid var(--glass-line)!important;backdrop-filter:blur(8px)}
+  .barrow .track{background:rgba(255,255,255,.06)}
+  .btn-ghost,.btn-test{background:rgba(255,255,255,.05)!important;border:1px solid var(--glass-line)!important;backdrop-filter:blur(8px)}
+  th{border-bottom:1px solid var(--glass-line)} td{border-bottom:1px solid rgba(255,255,255,.05)}
+  tbody tr[onclick]:hover{background:rgba(255,255,255,.045)}
+  ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);background-clip:padding-box}
+  .empty .big{background:var(--glass)!important;border:1px solid var(--glass-line);backdrop-filter:var(--glass-blur);border-radius:22px}
 </style>
 </head>
 <body>
