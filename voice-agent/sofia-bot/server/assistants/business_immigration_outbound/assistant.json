@@ -1,0 +1,56 @@
+{
+  "name": "Business Immigration Outbound",
+  "type": "outbound",
+  "stt": {
+    "provider": "deepgram",
+    "model": "nova-3"
+  },
+  "llm": {
+    "provider": "openai",
+    "model": "gpt-4.1"
+  },
+  "tts": {
+    "provider": "elevenlabs",
+    "voice_id": "FGY2WhTYpPnrIDTdsKH5",
+    "model": "eleven_flash_v2_5",
+    "stability": 0.4,
+    "similarity_boost": 0.8,
+    "style": 0.3,
+    "speed": 0.9
+  },
+  "greeting": "Hi, this is Charles, calling from Gunness & Associates. Am I speaking with {{name}}?",
+  "vad_stop_secs": 0.5,
+  "tools": [
+    {
+      "name": "end_call",
+      "description": "End the call after a warm goodbye.",
+      "method": "POST",
+      "webhook_url": "",
+      "enabled": true,
+      "properties": {},
+      "required": [],
+      "headers": {},
+      "timeout_secs": 15,
+      "retries": 0,
+      "response_path": "",
+      "success_message": "",
+      "failure_message": ""
+    }
+  ],
+  "dialing": {
+    "initial_delay_min": 10,
+    "max_attempts": 3,
+    "retry_interval_min": 60,
+    "pool_size": 3,
+    "business_hours": "09:00-19:00"
+  },
+  "integrations": {
+    "result_webhook_url": "",
+    "suitecrm": {
+      "base_url": "",
+      "module": "GA_HQ_Students",
+      "status_field": "status"
+    }
+  },
+  "folder": "testing"
+}

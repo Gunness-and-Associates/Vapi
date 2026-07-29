@@ -437,12 +437,18 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
             if assistant.get("type", "outbound") == "outbound"
             else "Welcome the caller warmly and ask how you can help."
         )
+        greeting_text = render_vars(
+            assistant.get("greeting") or default_greeting,
+            call_vars,
+        )
         context.add_message(
             {
                 "role": "developer",
-                "content": render_vars(
-                    assistant.get("greeting") or default_greeting,
-                    call_vars,
+                "content": (
+                    "Your very first message in this call must be exactly the following text, "
+                    "word for word, with nothing added before or after it. Do not paraphrase it, "
+                    "shorten it, or treat it as already spoken — say only this, verbatim:\n\n"
+                    + greeting_text
                 ),
             }
         )

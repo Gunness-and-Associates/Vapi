@@ -840,7 +840,7 @@ async function renderAnalytics(m){
     const tiles=[["Total calls",a.total],["Avg duration",mm+":"+ss],["Avg turns",a.avg_turns]];
     const bars=(arr)=>{ const max=Math.max(1,...arr.map(x=>x.count)); return `<div class="bars">${arr.map(x=>`<div class="barrow"><span class="lab">${esc((x.key||"—").replace(/_/g," "))}</span><span class="track"><span class="fill" style="width:${Math.round(x.count/max*100)}%"></span></span><span class="n">${x.count}</span></div>`).join("")}</div>`; };
     const maxDay=Math.max(1,...a.by_day.map(d=>d.count));
-    const days=a.by_day.length?`<div class="daybars">${a.by_day.map(d=>`<div class="d" title="${esc(d.day)}: ${d.count}"><div class="db" style="height:${Math.round(d.count/maxDay*100)}%"></div><span class="dl">${esc((d.day||"").slice(5))}</span></div>`).join("")}</div>`:`<div class="hint">No dated calls yet.</div>`;
+    const days=a.by_day.length?`<div class="daybars">${a.by_day.map(d=>`<div class="d" style="cursor:pointer" title="${esc(d.day)}: ${d.count}" onclick="showDayCalls('${esc(d.day)}')"><div class="db" style="height:${Math.round(d.count/maxDay*100)}%"></div><span class="dl">${esc((d.day||"").slice(5))}</span></div>`).join("")}</div>`:`<div class="hint">No dated calls yet.</div>`;
     $("ab").innerHTML=`
       <div class="stats">${tiles.map(t=>`<div class="stat"><div class="v">${esc(String(t[1]))}</div><div class="k">${t[0]}</div></div>`).join("")}</div>
       <div class="row" style="align-items:start">
@@ -860,6 +860,25 @@ window.showTranscript=(i)=>{ const c=(S.calls||[])[i]; if(!c)return; $("tTitle")
   const tx = esc(c.transcript||"(no transcript captured)").replace(/\n/g,"<br>");
   $("tBody").innerHTML = panel + `<div style="white-space:pre-wrap">${tx}</div>`;
   $("tOverlay").classList.add("show"); };
+window.showDayCalls=async(day)=>{
+  if(!S.calls){ try{ S.calls=await api("/api/calls"); }catch(e){ toast("Couldn't load calls",true); return; } }
+  const matches=(S.calls||[]).map((c,i)=>({c,i})).filter(({c})=>(c.time||"").startsWith(day));
+  if(!matches.length){ toast("No calls found for "+day,true); return; }
+  $("tTitle").textContent="Calls on "+day+" ("+matches.length+")";
+  const rows=matches.map(({c,i})=>`<div style="padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer" onclick="showTranscript(${i})">
+    <div style="display:flex;justify-content:space-between;gap:10px">
+      <strong style="font-size:12.5px">${esc(c.assistant||"—")}</strong>
+      <span style="color:var(--faint);font-size:11px">${esc(c.time||"")}</span>
+    </div>
+    <div style="margin-top:4px;display:flex;gap:6px;flex-wrap:wrap">
+      ${c.outcome?`<span class="badge draft">${esc((c.outcome||"").replace(/_/g," "))}</span>`:""}
+      ${c.sentiment?sentPill(c.sentiment):""}
+      ${c.lead_score?scorePill(c.lead_score):""}
+    </div>
+  </div>`).join("");
+  $("tBody").innerHTML=rows;
+  $("tOverlay").classList.add("show");
+};
 boot();
 </script>
 </body>
