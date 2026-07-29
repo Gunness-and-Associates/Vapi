@@ -49,6 +49,7 @@ from pipecat.runner.utils import create_transport
 from pipecat.services.deepgram.stt import DeepgramSTTService, DeepgramSTTSettings
 from pipecat.services.elevenlabs.tts import ElevenLabsTTSService
 from pipecat.services.openai.llm import OpenAILLMService
+from tool_runtime import execute_http_tool, extract_tool_result
 from pipecat.transports.base_transport import BaseTransport, TransportParams
 from pipecat.workers.runner import WorkerRunner
 
@@ -71,10 +72,30 @@ def load_assistant(assistant_id: str) -> dict:
     return cfg
 
 
-ASSISTANT = load_assistant(ASSISTANT_ID)
-ASSISTANT_DIR = os.path.join(_ASSISTANTS_DIR, ASSISTANT_ID)
 CALLS_ENDPOINT = os.getenv("CALLS_ENDPOINT", "http://localhost:8080/api/calls")
 CLASSIFY_MODEL = os.getenv("CLASSIFY_MODEL", "gpt-4o-mini")
+
+
+def resolve_assistant_id(body: dict) -> str:
+    """Resolve the assistant for a session, preferring the explicit client choice."""
+    requested = str(body.get("assistant_id") or "").strip()
+    for assistant_id in (requested, ASSISTANT_ID):
+        if assistant_id and os.path.isfile(
+            os.path.join(_ASSISTANTS_DIR, assistant_id, "assistant.json")
+        ):
+            return assistant_id
+
+    available = [
+        name
+        for name in os.listdir(_ASSISTANTS_DIR)
+        if os.path.isfile(os.path.join(_ASSISTANTS_DIR, name, "assistant.json"))
+    ]
+    if len(available) == 1:
+        return available[0]
+    raise FileNotFoundError(
+        "No valid assistant was selected. Create an assistant in the dashboard, "
+        "then launch its test session from the configuration panel."
+    )
 
 
 async def classify_call(transcript: str) -> dict:
@@ -117,7 +138,7 @@ async def classify_call(transcript: str) -> dict:
     except Exception as e:
         logger.error(f"classify_call failed: {e}")
         return {}
-logger.info(f"Loaded assistant '{ASSISTANT_ID}': {ASSISTANT.get('name', ASSISTANT_ID)}")
+logger.info("Voice engine ready; assistant configuration loads per session")
 
 
 def render_vars(text: str, variables: dict) -> str:
@@ -137,16 +158,50 @@ def render_vars(text: str, variables: dict) -> str:
     )
 
 
+def build_system_instruction(assistant: dict, call_vars: dict) -> str:
+    """Build the per-call instruction and add CRM context automatically."""
+    default_prompt = (
+        "You are a helpful voice assistant on a live phone call. Respond naturally, "
+        "keep answers concise, ask one question at a time, and never invent facts."
+    )
+    instruction = render_vars(
+        assistant.get("system_prompt") or default_prompt, call_vars
+    )
+    contact_name = call_vars.get("leadName") or (
+        call_vars.get("first_name") if call_vars.get("first_name") != "there" else ""
+    )
+    contact_context = [
+        ("Contact name", contact_name),
+        ("Email", call_vars.get("leadEmail")),
+        ("Phone", call_vars.get("leadPhone")),
+    ]
+    contact_context = [(label, value) for label, value in contact_context if value]
+    if contact_context:
+        instruction += (
+            "\n\nCONTACT CONTEXT (provided securely by the calling integration):\n"
+            + "\n".join(f"- {label}: {value}" for label, value in contact_context)
+            + "\nUse these details naturally when relevant. Do not recite the context, "
+            "and confirm sensitive information before taking an external action."
+        )
+    return instruction
+
+
 async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> None:
     """Run one voice session for the selected assistant."""
-    logger.info(f"Starting bot: {ASSISTANT.get('name', ASSISTANT_ID)}")
-
+    # Reload for every new session so dashboard saves take effect without restarting
+    # the worker. An in-progress call keeps the snapshot it started with.
     # Per-call variables (lead name/email/phone) come from runner_args.body — set by
     # the WebRTC offer now, and the telephony dialer later. They're substituted into
     # the prompt + greeting, and used as the source of truth for tool args so an
     # unfilled {{leadEmail}} can never leak out to n8n.
     _body = getattr(runner_args, "body", None)
     _body = _body if isinstance(_body, dict) else {}
+    # Load a fresh snapshot for each session so saved model and voice changes apply
+    # to the next call while an active call remains stable.
+    assistant_id = resolve_assistant_id(_body)
+    assistant = load_assistant(assistant_id)
+    assistant_dir = os.path.join(_ASSISTANTS_DIR, assistant_id)
+    logger.info(f"Starting bot: {assistant.get('name', assistant_id)}")
     call_vars = {
         "first_name": _body.get("first_name") or _body.get("firstName") or "there",
         "leadName": _body.get("leadName") or _body.get("first_name") or _body.get("firstName") or "",
@@ -159,13 +214,13 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
     if _present:
         logger.info(f"Call variables provided: {_present}")  # keys only, no PII
 
-    stt_cfg = ASSISTANT.get("stt", {})
-    llm_cfg = ASSISTANT.get("llm", {})
-    tts_cfg = ASSISTANT.get("tts", {})
+    stt_cfg = assistant.get("stt", {})
+    llm_cfg = assistant.get("llm", {})
+    tts_cfg = assistant.get("tts", {})
 
     # Knowledge base: if this assistant has an index, expose a lookup tool + nudge the prompt.
-    kb_enabled = rag.index_stats(ASSISTANT_DIR).get("chunks", 0) > 0
-    system_instruction = render_vars(ASSISTANT["system_prompt"], call_vars)
+    kb_enabled = rag.index_stats(assistant_dir).get("chunks", 0) > 0
+    system_instruction = build_system_instruction(assistant, call_vars)
     if kb_enabled:
         system_instruction += (
             "\n\nKNOWLEDGE BASE: You have documents about the program. When asked something "
@@ -207,11 +262,11 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
         ),
     )
 
-    # Tools (function calling → n8n webhooks). Only advertise tools that are
+    # Tools (function calling to HTTP actions). Only advertise tools that are
     # actually executable: end_call, or a tool with a webhook_url configured.
     tool_defs = [
         t
-        for t in ASSISTANT.get("tools", [])
+        for t in assistant.get("tools", [])
         if t.get("enabled", True) and (t.get("name") == "end_call" or t.get("webhook_url"))
     ]
     tool_schemas = [
@@ -243,7 +298,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
                 # higher confidence to interrupt, so echo / background noise doesn't cut
                 # her off mid-sentence. stop_secs = silence before she's sure you're done.
                 params=VADParams(
-                    stop_secs=ASSISTANT.get("vad_stop_secs", 0.8),
+                    stop_secs=assistant.get("vad_stop_secs", 0.8),
                     start_secs=0.3,
                     confidence=0.7,
                 )
@@ -273,15 +328,29 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
         observers=[],
     )
 
-    # --- Tool handlers: each webhook tool POSTs its args to the configured n8n
-    # webhook and returns the response to the model (same pattern as the old Vapi
-    # tools). end_call ends the session after a warm goodbye. ---
-    def make_webhook_handler(url: str):
+    # --- Tool handlers: each connected action sends its arguments to the configured
+    # HTTP endpoint and returns the response to the model. end_call closes the session. ---
+    def record_tool_run(tool_name: str, status: str, started: float, detail: str = ""):
+        entry = {
+            "timestamp": datetime.utcnow().isoformat(timespec="seconds") + "Z",
+            "tool": tool_name,
+            "status": status,
+            "duration_ms": round((time.monotonic() - started) * 1000),
+            "detail": detail[:240],
+        }
+        try:
+            with open(os.path.join(assistant_dir, "tool_runs.jsonl"), "a", encoding="utf-8") as handle:
+                handle.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        except Exception as exc:
+            logger.warning(f"Could not write tool run log: {exc}")
+
+    def make_webhook_handler(tool: dict):
+        url, tool_name = tool["webhook_url"], tool["name"]
         async def handler(params):
+            started = time.monotonic()
             args = dict(params.arguments or {})
-            # Per-call lead data is the source of truth: if the model left an arg empty
-            # or passed a raw {{placeholder}}, fill it from the CRM/call variables. So the
-            # enrolment email goes to the real address, not whatever the model guessed.
+            # Per-call CRM data is the source of truth. If a workflow declares one of
+            # these context fields and the model leaves it empty, fill it from the call.
             for k in ("leadEmail", "leadName", "leadPhone", "first_name"):
                 v = args.get(k)
                 if (v in (None, "") or (isinstance(v, str) and "{{" in v)) and call_vars.get(k):
@@ -292,36 +361,39 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
                 await params.result_callback(
                     "I don't have that on file — I need to ask the caller for it before sending."
                 )
+                record_tool_run(tool_name, "blocked", started, "Missing required call context")
                 return
             em = args.get("leadEmail")
             if em is not None and ("@" not in str(em) or "." not in str(em).split("@")[-1]):
                 await params.result_callback(
                     "That email doesn't look complete — reconfirm it with the caller, then try again."
                 )
+                record_tool_run(tool_name, "blocked", started, "Invalid email")
                 return
             try:
-                async with aiohttp.ClientSession() as session:
-                    async with session.post(
-                        url,
-                        json=args,
-                        timeout=aiohttp.ClientTimeout(total=15),
-                    ) as resp:
-                        text = await resp.text()
-                result = text
-                try:
-                    data = json.loads(text)
-                    # n8n workflows reply in Vapi's shape: {"results":[{"result": "..."}]}.
-                    # Also accept a flat {"result": ...} / {"message": ...}.
-                    if isinstance(data, dict) and isinstance(data.get("results"), list) and data["results"]:
-                        result = data["results"][0].get("result") or text
-                    elif isinstance(data, dict):
-                        result = data.get("result") or data.get("message") or text
-                except Exception:
-                    pass
-                await params.result_callback(result or "Done.")
+                timeout_secs = max(1, min(int(tool.get("timeout_secs", 15)), 60))
+                headers = {**(tool.get("headers") or {}), "X-HQ-Tool-Name": tool_name}
+                status, text = await execute_http_tool(
+                    url=url,
+                    arguments=args,
+                    headers=headers,
+                    method=tool.get("method", "POST"),
+                    timeout_secs=timeout_secs,
+                    retries=tool.get("retries", 0),
+                )
+                if status < 200 or status >= 300:
+                    logger.error(f"Tool '{tool_name}' returned HTTP {status}: {text[:300]}")
+                    record_tool_run(tool_name, "failed", started, f"HTTP {status}: {text[:160]}")
+                    await params.result_callback(tool.get("failure_message") or "The action failed. Let the caller know it could not be completed and offer another option.")
+                    return
+                result = extract_tool_result(text, tool.get("response_path", ""))
+                success = tool.get("success_message") or ""
+                record_tool_run(tool_name, "succeeded", started, f"HTTP {status}")
+                await params.result_callback(f"{success}\n{result}".strip() if success else str(result or "Done."))
             except Exception as e:
-                logger.error(f"Tool webhook failed ({url}): {e}")
-                await params.result_callback("That didn't go through — I can try again or book an advisor.")
+                logger.error(f"Tool '{tool_name}' webhook failed ({url}): {e}")
+                record_tool_run(tool_name, "failed", started, str(e))
+                await params.result_callback(tool.get("failure_message") or "The action could not be completed. Apologize briefly and offer to try again or use another option.")
 
         return handler
 
@@ -337,13 +409,13 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
         if name == "end_call":
             llm.register_function("end_call", end_call_handler)
         elif t.get("webhook_url"):
-            llm.register_function(name, make_webhook_handler(t["webhook_url"]))
+            llm.register_function(name, make_webhook_handler(t))
 
     if kb_enabled:
         async def kb_handler(params):
             q = (params.arguments or {}).get("query", "")
             try:
-                passages = await asyncio.to_thread(rag.search, ASSISTANT_DIR, q, 4)
+                passages = await asyncio.to_thread(rag.search, assistant_dir, q, 4)
                 result = "\n\n---\n\n".join(passages) if passages else "Nothing relevant found in the knowledge base."
             except Exception as e:
                 logger.error(f"KB search failed: {e}")
@@ -359,11 +431,17 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
     @worker.rtvi.event_handler("on_client_ready")
     async def on_client_ready(rtvi):
         # Kick off the conversation with this assistant's greeting
+        default_greeting = (
+            "Greet the contact warmly, briefly explain why you are calling, and ask "
+            "whether now is a good time to speak."
+            if assistant.get("type", "outbound") == "outbound"
+            else "Welcome the caller warmly and ask how you can help."
+        )
         context.add_message(
             {
                 "role": "developer",
                 "content": render_vars(
-                    ASSISTANT.get("greeting", "Greet the person warmly and ask how you can help."),
+                    assistant.get("greeting") or default_greeting,
                     call_vars,
                 ),
             }
@@ -393,8 +471,8 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
             )
             record = {
                 "time": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                "assistant": ASSISTANT.get("name", ASSISTANT_ID),
-                "direction": ASSISTANT.get("type", "outbound"),
+                "assistant": assistant.get("name", assistant_id),
+                "direction": assistant.get("type", "outbound"),
                 "duration": f"{secs // 60}:{secs % 60:02d}",
                 "outcome": "completed" if turns else "no_conversation",
                 "turns": len(turns),

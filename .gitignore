@@ -22,6 +22,10 @@ env/
 **/.ruff_cache/
 .pytest_cache/
 .mypy_cache/
+.playwright-cli/
+**/.playwright-cli/
+output/
+**/output/
 
 # ── Runtime data — may contain real customer PII, NEVER commit to a public repo ──
 # call transcripts / outcomes, and the embedded knowledge-base index + uploads

@@ -24,6 +24,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 import rag
+from tool_runtime import ALLOWED_HTTP_METHODS, execute_http_tool, normalize_http_method
 
 load_dotenv()  # so the embedding step has OPENAI_API_KEY
 
@@ -43,19 +44,23 @@ app.add_middleware(
 OPTIONS = {
     "llm": {
         "openai": [
+            "gpt-5.6-sol",
+            "gpt-5.2",
+            "gpt-5.1",
+            "gpt-5",
+            "gpt-5-mini",
             "gpt-4.1",
             "gpt-4.1-mini",
             "gpt-4.1-nano",
             "gpt-4o",
             "gpt-4o-mini",
-            "gpt-5",
-            "gpt-5-mini",
         ],
     },
     "stt": {
         "deepgram": [
             "nova-3",
             "nova-3-general",
+            "nova-3-medical",
             "nova-2",
             "nova-2-general",
             "nova-2-phonecall",
@@ -65,10 +70,9 @@ OPTIONS = {
     "tts": {
         "elevenlabs": [
             "eleven_flash_v2_5",
-            "eleven_turbo_v2_5",
             "eleven_multilingual_v2",
+            "eleven_v3",
             "eleven_flash_v2",
-            "eleven_turbo_v2",
         ]
     },
 }
@@ -163,6 +167,62 @@ class AssistantPayload(BaseModel):
     prompt: str = ""
 
 
+class ToolTestPayload(BaseModel):
+    webhook_url: str
+    arguments: dict = {}
+    headers: dict = {}
+    method: str = "POST"
+    tool_name: str = "tool_test"
+    timeout_secs: int = 15
+    retries: int = 0
+
+
+def validate_tools(config: dict):
+    """Reject tool definitions that cannot be safely exposed to the model."""
+    seen = set()
+    for tool in config.get("tools", []):
+        name = (tool.get("name") or "").strip()
+        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]{0,63}", name):
+            raise HTTPException(400, f"Invalid tool name '{name}'. Use letters, numbers, and underscores.")
+        if name in seen:
+            raise HTTPException(400, f"Tool name '{name}' is duplicated.")
+        seen.add(name)
+        if name != "end_call" and tool.get("enabled", True):
+            url = (tool.get("webhook_url") or "").strip()
+            if not re.match(r"^https?://", url, re.I):
+                raise HTTPException(400, f"Enabled tool '{name}' needs an HTTP or HTTPS webhook URL.")
+        try:
+            normalize_http_method(tool.get("method", "POST"))
+        except ValueError:
+            allowed = ", ".join(sorted(ALLOWED_HTTP_METHODS))
+            raise HTTPException(400, f"Tool '{name}' must use one of: {allowed}.") from None
+        props = tool.get("properties") or {}
+        if not isinstance(props, dict):
+            raise HTTPException(400, f"Tool '{name}' has invalid parameters.")
+        for key, schema in props.items():
+            if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]{0,63}", key):
+                raise HTTPException(400, f"Tool '{name}' has invalid input name '{key}'.")
+            if not isinstance(schema, dict) or schema.get("type", "string") not in {
+                "string", "number", "boolean"
+            }:
+                raise HTTPException(400, f"Tool '{name}' has an invalid type for '{key}'.")
+        required = tool.get("required") or []
+        if any(key not in props for key in required):
+            raise HTTPException(400, f"Tool '{name}' has an unknown required parameter.")
+        timeout = tool.get("timeout_secs", 15)
+        if not isinstance(timeout, (int, float)) or not 1 <= timeout <= 60:
+            raise HTTPException(400, f"Tool '{name}' timeout must be between 1 and 60 seconds.")
+        retries = tool.get("retries", 0)
+        if not isinstance(retries, int) or not 0 <= retries <= 2:
+            raise HTTPException(400, f"Tool '{name}' retries must be between 0 and 2.")
+        headers = tool.get("headers") or {}
+        if not isinstance(headers, dict) or any(
+            not isinstance(k, str) or not isinstance(v, str) or "\r" in k + v or "\n" in k + v
+            for k, v in headers.items()
+        ):
+            raise HTTPException(400, f"Tool '{name}' has invalid request headers.")
+
+
 @app.get("/api/options")
 def get_options():
     return OPTIONS
@@ -188,11 +248,84 @@ def list_assistants():
                         "voice": cfg.get("tts", {}).get("voice_id", ""),
                         "tools": len(tools),
                         "kb_chunks": kb.get("chunks", 0),
+                        "folder": cfg.get("folder", ""),
                     }
                 )
             except Exception:
-                out.append({"id": aid, "name": aid, "llm": "", "voice": ""})
+                out.append({"id": aid, "name": aid, "llm": "", "voice": "", "folder": ""})
     return out
+
+
+# ── Folders (organize assistants) ──
+FOLDERS_FILE = os.path.join(ASSISTANTS_DIR, "_folders.json")
+
+
+def _read_folders() -> list:
+    if os.path.isfile(FOLDERS_FILE):
+        try:
+            with open(FOLDERS_FILE, encoding="utf-8") as f:
+                return json.load(f).get("folders", [])
+        except Exception:
+            return []
+    return []
+
+
+def _write_folders(folders: list):
+    with open(FOLDERS_FILE, "w", encoding="utf-8") as f:
+        json.dump({"folders": folders}, f, indent=2, ensure_ascii=False)
+
+
+def _set_assistant_folder(aid: str, folder: str):
+    cfg_path = os.path.join(ASSISTANTS_DIR, aid, "assistant.json")
+    if os.path.isfile(cfg_path):
+        with open(cfg_path, encoding="utf-8") as f:
+            cfg = json.load(f)
+        cfg["folder"] = folder
+        with open(cfg_path, "w", encoding="utf-8") as f:
+            json.dump(cfg, f, indent=2, ensure_ascii=False)
+
+
+@app.get("/api/folders")
+def list_folders():
+    return {"folders": _read_folders()}
+
+
+@app.post("/api/folders")
+def create_folder(payload: dict):
+    name = (payload.get("name") or "").strip()
+    if not name:
+        raise HTTPException(400, "Folder name required")
+    folders = _read_folders()
+    if name not in folders:
+        folders.append(name)
+        _write_folders(folders)
+    return {"folders": folders}
+
+
+@app.delete("/api/folders/{name}")
+def delete_folder(name: str):
+    folders = [f for f in _read_folders() if f != name]
+    _write_folders(folders)
+    for aid in os.listdir(ASSISTANTS_DIR):
+        try:
+            cfg_path = os.path.join(ASSISTANTS_DIR, aid, "assistant.json")
+            if os.path.isfile(cfg_path):
+                with open(cfg_path, encoding="utf-8") as f:
+                    cfg = json.load(f)
+                if cfg.get("folder") == name:
+                    _set_assistant_folder(aid, "")
+        except Exception:
+            pass
+    return {"folders": folders}
+
+
+@app.post("/api/assistants/{aid}/move")
+def move_assistant(aid: str, payload: dict):
+    if not os.path.isfile(os.path.join(ASSISTANTS_DIR, aid, "assistant.json")):
+        raise HTTPException(404, "Assistant not found")
+    folder = (payload.get("folder") or "").strip()
+    _set_assistant_folder(aid, folder)
+    return {"ok": True, "folder": folder}
 
 
 @app.get("/api/assistants/{aid}")
@@ -202,6 +335,7 @@ def get_assistant(aid: str):
 
 @app.post("/api/assistants")
 def create_assistant(payload: AssistantPayload):
+    validate_tools(payload.config)
     name = payload.config.get("name") or "New Assistant"
     aid = slugify(name)
     base = os.path.join(ASSISTANTS_DIR, aid)
@@ -219,8 +353,61 @@ def update_assistant(aid: str, payload: AssistantPayload):
     base, cfg_path, _ = _paths(aid)
     if not os.path.isfile(cfg_path):
         raise HTTPException(404, f"Assistant '{aid}' not found")
+    validate_tools(payload.config)
     write_assistant(aid, payload.config, payload.prompt)
     return read_assistant(aid)
+
+
+@app.post("/api/tools/test")
+async def test_tool(payload: ToolTestPayload):
+    """Send a sample request to a connected action before it is used on a call."""
+    url = payload.webhook_url.strip()
+    if not re.match(r"^https?://", url, re.I):
+        raise HTTPException(400, "Enter a valid HTTP or HTTPS request URL.")
+    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]{0,63}", payload.tool_name):
+        raise HTTPException(400, "Enter a valid tool name before testing.")
+    try:
+        timeout_secs = max(1, min(payload.timeout_secs, 60))
+        headers = {**payload.headers, "X-HQ-Tool-Name": payload.tool_name}
+        status, body = await execute_http_tool(
+            url=url,
+            arguments=payload.arguments,
+            headers=headers,
+            method=payload.method,
+            timeout_secs=timeout_secs,
+            retries=payload.retries,
+        )
+        if status < 200 or status >= 300:
+            raise HTTPException(502, f"Tool endpoint returned HTTP {status}: {body[:300]}")
+        return {"ok": True, "status": status, "response": body[:2000]}
+    except HTTPException:
+        raise
+    except asyncio.TimeoutError:
+        raise HTTPException(504, f"Tool endpoint did not respond within {timeout_secs} seconds.")
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
+    except Exception as exc:
+        raise HTTPException(502, f"Could not reach tool endpoint: {exc}")
+
+
+@app.get("/api/assistants/{aid}/tool-runs")
+def list_tool_runs(aid: str, limit: int = 25):
+    """Return recent tool executions without exposing webhook credentials."""
+    base, cfg_path, _ = _paths(aid)
+    if not os.path.isfile(cfg_path):
+        raise HTTPException(404, "Assistant not found")
+    path = os.path.join(base, "tool_runs.jsonl")
+    if not os.path.isfile(path):
+        return {"runs": []}
+    with open(path, encoding="utf-8") as handle:
+        lines = handle.readlines()[-max(1, min(limit, 100)):]
+    runs = []
+    for line in reversed(lines):
+        try:
+            runs.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
+    return {"runs": runs}
 
 
 @app.delete("/api/assistants/{aid}")

@@ -91,6 +91,7 @@
 
 <script type="module">
   const OFFER_URL = "http://localhost:7860/api/offer";
+  const assistantId = new URLSearchParams(window.location.search).get("assistant_id") || "";
   const orb = document.getElementById("orb");
   const statusEl = document.getElementById("status");
   const statusText = document.getElementById("statusText");
@@ -163,7 +164,10 @@
         },
       });
 
-      await client.connect({ webrtcUrl: OFFER_URL });
+      await client.connect({
+        webrtcUrl: OFFER_URL,
+        requestData: assistantId ? { assistant_id: assistantId } : {},
+      });
     }catch(err){
       console.error(err);
       setStatus("Couldn't connect: " + (err?.message || err), "err");

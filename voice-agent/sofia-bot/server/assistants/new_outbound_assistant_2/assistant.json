@@ -1,6 +1,6 @@
 {
-  "name": "New Inbound Assistant",
-  "type": "inbound",
+  "name": "New Outbound Assistant",
+  "type": "outbound",
   "stt": {
     "provider": "deepgram",
     "model": "nova-3"
@@ -13,13 +13,13 @@
     "provider": "elevenlabs",
     "voice_id": "FGY2WhTYpPnrIDTdsKH5",
     "model": "eleven_flash_v2_5",
-    "stability": 0.3,
+    "stability": 0.4,
     "similarity_boost": 0.8,
-    "style": 0.6,
-    "speed": 1.05
+    "style": 0.3,
+    "speed": 0.9
   },
-  "greeting": "Warmly greet the caller, introduce yourself, and ask how you can help today.",
-  "vad_stop_secs": 0.4,
+  "greeting": "Greet them warmly by name, say in one line why you're calling, and ask if it's a good time for a quick chat.",
+  "vad_stop_secs": 0.5,
   "tools": [
     {
       "name": "end_call",
