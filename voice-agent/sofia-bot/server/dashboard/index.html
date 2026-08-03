@@ -202,6 +202,18 @@
   td{padding:15px 16px;border-bottom:1px solid var(--line)}tr:last-child td{border-bottom:none}
   tbody tr{transition:.12s}tbody tr[onclick]:hover{background:var(--s2)}
   .tablecard{background:var(--s1);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh1)}
+  .calls-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:6px 0 18px}
+  .calls-search{position:relative;flex:1;min-width:220px;display:flex;align-items:center;gap:9px;height:42px;padding:0 12px 0 38px;border:1px solid var(--line2);border-radius:10px;background:var(--s2)}
+  .calls-search svg{position:absolute;left:12px;width:15px;height:15px;color:var(--faint)}
+  .calls-search input{border:0;background:transparent;padding:0;height:auto}
+  .calls-search input:focus{box-shadow:none}
+  .calls-rec-toggle{margin-left:auto;white-space:nowrap}
+  .row-rec-cell{text-align:center}
+  .row-play{width:30px;height:30px;border-radius:50%;background:var(--tglow);color:var(--teal);display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(34,205,174,.25)}
+  .row-play:hover{background:rgba(34,205,174,.22);border-color:var(--teal)}
+  .row-play svg{width:12px;height:12px}
+  .row-play-none{display:inline-flex;width:30px;height:30px;border-radius:50%;align-items:center;justify-content:center;color:var(--faint);opacity:.5}
+  .row-play-none svg{width:12px;height:12px}
 
   .overlay{position:fixed;inset:0;background:rgba(2,5,5,.78);display:none;align-items:center;justify-content:center;z-index:30;padding:20px;backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px)}.overlay.show{display:flex;animation:fade .18s ease}
   @keyframes fade{from{opacity:0}to{opacity:1}}
@@ -209,6 +221,8 @@
   @keyframes pop{from{transform:translateY(14px) scale(.97);opacity:0}to{transform:none;opacity:1}}
   .modal-head{padding-right:42px}.modal h2{margin:0 0 6px;font-size:19px;letter-spacing:-.02em}.modal p{margin:0 0 20px;color:var(--muted);font-size:12.5px;line-height:1.5}
   .modal-close{position:absolute;right:18px;top:18px;width:34px;height:34px;border:1px solid transparent;border-radius:9px;background:transparent;color:var(--faint);font-size:21px;line-height:1;cursor:pointer}.modal-close:hover,.modal-close:focus-visible{color:var(--ink);background:var(--s2);border-color:var(--line2);outline:none}
+  .modal-back{position:absolute;left:18px;top:18px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:1px solid transparent;border-radius:9px;background:transparent;color:var(--faint);cursor:pointer}.modal-back svg{width:18px;height:18px}.modal-back:hover,.modal-back:focus-visible{color:var(--teal);background:var(--s2);border-color:var(--line2);outline:none}
+  #tModal.has-back #tHead{padding-left:32px}
   .choices{display:flex;flex-direction:column;border:1px solid var(--line2);border-radius:12px;overflow:hidden}
   .choice{display:grid;grid-template-columns:36px minmax(0,1fr) 18px;align-items:center;gap:12px;width:100%;border:0;border-bottom:1px solid var(--line);border-radius:0;padding:14px;cursor:pointer;transition:background .14s;text-align:left;background:transparent;color:var(--ink);font:inherit}
   .choice:last-child{border-bottom:0}.choice:hover,.choice:focus-visible{background:var(--s2);transform:none;box-shadow:none;outline:none}
@@ -221,10 +235,14 @@
   @media(max-width:640px){.modal{padding:22px}}
   .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(90px);background:var(--good);color:#042018;padding:13px 24px;border-radius:12px;font-weight:700;transition:transform .32s cubic-bezier(.34,1.3,.6,1);z-index:40;box-shadow:var(--sh2)}.toast.show{transform:translateX(-50%) translateY(0)}.toast.err{background:var(--danger);color:#2a0f08}
   /* analytics */
-  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:26px}
-  .stat{background:var(--s1);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;box-shadow:var(--sh1)}
-  .stat .v{font-size:26px;font-weight:800;letter-spacing:-.02em;font-family:"SF Mono",Consolas,monospace;color:var(--ink)}
-  .stat .k{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;margin-top:5px;font-weight:600}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:26px}
+  .stat{position:relative;background:var(--s1);border:1px solid var(--line);border-radius:var(--r);padding:19px 20px;box-shadow:var(--sh1);overflow:hidden}
+  .stat:before{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:linear-gradient(90deg,transparent,var(--stat-accent,var(--teal)),transparent);opacity:.8}
+  .stat-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .stat-icon{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:color-mix(in srgb,var(--stat-accent,var(--teal)) 14%,transparent);color:var(--stat-accent,var(--teal))}
+  .stat-icon svg{width:16px;height:16px}
+  .stat .v{font-size:27px;font-weight:800;letter-spacing:-.02em;font-family:"SF Mono",Consolas,monospace;color:var(--ink);line-height:1}
+  .stat .k{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;margin-top:7px;font-weight:600}
   .bars{display:flex;flex-direction:column;gap:11px}
   .barrow{display:grid;grid-template-columns:120px 1fr 40px;align-items:center;gap:12px;font-size:13px}
   .barrow .lab{color:var(--muted);text-transform:capitalize;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -243,10 +261,13 @@
   .cd-meta b{color:var(--muted);font-weight:650}
   .cd-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
   .cd-recording{background:var(--bg2);border:1px solid var(--line2);border-radius:12px;padding:13px 15px;margin-bottom:18px}
+  .cd-audio{width:100%;height:38px;border-radius:8px;filter:invert(0.88) hue-rotate(180deg) saturate(1.4)}
   .cd-rec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.07em;font-weight:700}
+  .cd-rec-soon{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;background:rgba(230,185,94,.1);border:1px solid rgba(230,185,94,.25);color:var(--amber);font-size:9px;font-weight:750;letter-spacing:.05em;text-transform:uppercase}
+  .cd-rec-soon svg{width:10px;height:10px}
   .cd-rec-controls{display:flex;align-items:center;gap:12px}
-  .cd-playbtn{width:32px;height:32px;border-radius:50%;background:var(--tglow);color:var(--teal);display:grid;place-items:center;flex:none;opacity:.45;cursor:not-allowed}
-  .cd-playbtn svg{width:13px;height:13px}
+  .cd-playbtn{width:32px;height:32px;border-radius:50%;background:var(--s3);color:var(--faint);display:grid;place-items:center;flex:none;cursor:not-allowed;border:1px dashed var(--line3)}
+  .cd-playbtn svg{width:13px;height:13px;margin-left:1px}
   .cd-waveform{flex:1;height:32px;display:flex;align-items:center;gap:2px;overflow:hidden}
   .cd-wavebar{width:3px;border-radius:2px;background:var(--line3);flex:none}
   .cd-rec-note{margin-top:9px;font-size:10.5px;color:var(--faint);line-height:1.4}
@@ -455,6 +476,7 @@
     <div class="modal-foot"><button class="cancel" id="cancelNew" type="button">Cancel</button></div>
   </div></div>
   <div class="overlay" id="tOverlay"><div class="modal" id="tModal" style="max-width:660px">
+    <button class="modal-back" id="tBackBtn" onclick="backFromDetail()" type="button" aria-label="Back" style="display:none"></button>
     <button class="modal-close" onclick="closeCallDetail()" type="button" aria-label="Close">&times;</button>
     <div id="tHead"></div>
     <div class="cd-tabs" id="tTabs" style="display:none"></div>
@@ -471,12 +493,17 @@ const IC={
   back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>',
   plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>',
   play:'<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M6 3v18l15-9z"/></svg>',
+  pause:'<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>',
   trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
   upload:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>',
   file:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/></svg>',
   bot2:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>',
   phone:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
   check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+  clock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+  chat:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+  trend:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>',
+  lock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
   // tab icons
   t_model:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg>',
   t_voice:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="2" x2="6" y1="14" y2="14"/><line x1="10" x2="14" y1="8" y2="8"/><line x1="18" x2="22" y1="16" y2="16"/></svg>',
@@ -592,6 +619,7 @@ async function boot(){ try{const remote=await api("/api/options");
   $("overlay").addEventListener("click",e=>{if(e.target===$("overlay"))closeNew();});
   document.addEventListener("keydown",e=>{if(e.key==="Escape"){if($("overlay").classList.contains("show"))closeNew();document.querySelectorAll('.overlay.show:not(#overlay):not(#tOverlay)').forEach(ov=>ov.remove());}});
   document.querySelectorAll(".choice").forEach(c=>c.onclick=()=>createWithType(c.dataset.type));
+  $("tBackBtn").innerHTML=IC.back;
   await loadList(); go("assistants");
 }
 function go(sec){ S.section=sec; S.current=null; S.isNew=false;
@@ -860,22 +888,110 @@ function renderLaunch(m,title,sub,tab){
   m.innerHTML=topbar(title)+`<div class="content"><div class="listwrap"><p class="sec-d">${sub}</p>${ S.list.length? `<div class="cardgrid">${cards}</div>`:'<div class="empty"><div class="big">'+IC.bot2+'</div><h3>No assistants yet</h3><div>Create an assistant first, then manage its '+esc(title.toLowerCase())+' here.</div></div>'}</div></div>`;
 }
 window.openTab=async(id,tab)=>{S.current=await api("/api/assistants/"+id);S.isNew=false;S.tab=tab;render();};
-async function renderCalls(m){ m.innerHTML=topbar("Call Logs")+`<div class="content"><div class="listwrap"><p class="sec-d">Transcripts, duration and outcomes from your agents' calls — click a row to read the transcript.</p><div id="cb"><div class="hint">Loading…</div></div></div></div>`;
-  try{const calls=await api("/api/calls"); S.calls=calls;
-    $("cb").innerHTML=calls.length?`<div class="tablecard"><table><thead><tr><th>Time</th><th>Assistant</th><th>Dir</th><th>Duration</th><th>Outcome</th><th>Sentiment</th><th>Score</th></tr></thead><tbody>${calls.map((c,i)=>`<tr onclick="showTranscript(${i})"><td>${esc(c.time||"—")}</td><td>${esc(c.assistant||"—")}</td><td><span class="badge ${(c.direction||'outbound')==='inbound'?'in':'out'}">${(c.direction||'—').toUpperCase()}</span></td><td>${esc(c.duration||"—")}</td><td>${outcomePill(c.outcome)}</td><td>${sentPill(c.sentiment)}</td><td>${scorePill(c.lead_score)}</td></tr>`).join("")}</tbody></table></div>`:`<div class="empty"><div class="big">${IC.phone}</div><h3>No calls yet</h3><div>Once your agents start talking, every call shows up here with its transcript, outcome and sentiment.</div></div>`;
-  }catch(e){$("cb").innerHTML=`<div class="empty">Couldn't load calls.</div>`;} }
+let CALLS_STATE={q:"",dir:"all",recOnly:false,playing:null};
+function callsOverviewHtml(calls){
+  const total=calls.length;
+  const inbound=calls.filter(c=>(c.direction||'outbound')==='inbound').length;
+  const outbound=total-inbound;
+  const recorded=calls.filter(c=>c.recording_file).length;
+  const tile=(label,value,icon,accent)=>`<div class="stat" style="--stat-accent:${accent}"><div class="stat-top"><div class="stat-icon">${icon}</div></div><div class="v">${value}</div><div class="k">${label}</div></div>`;
+  return `<div class="stats">${tile("Total calls",total,IC.phone,"var(--teal)")}${tile("Outbound",outbound,IC.out,"var(--teal2)")}${tile("Inbound",inbound,IC.in,"var(--amber)")}${tile("With recording",recorded,IC.play,"var(--good)")}</div>`;
+}
+function callsToolbarHtml(){
+  const dirs=[["all","All"],["outbound","Outbound"],["inbound","Inbound"]];
+  return `<div class="calls-toolbar">
+    <label class="calls-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg><input id="callsSearch" placeholder="Search by assistant name…" oninput="filterCalls(this.value)"></label>
+    <div class="seg" id="callsDirSeg">${dirs.map(([k,l])=>`<button class="${k===CALLS_STATE.dir?'on-out on':''}" data-dir="${k}" onclick="setCallsDir('${k}')">${l}</button>`).join("")}</div>
+    <label class="chk calls-rec-toggle"><input type="checkbox" id="callsRecOnly" ${CALLS_STATE.recOnly?'checked':''} onchange="setCallsRecOnly(this.checked)"> Has recording</label>
+  </div>`;
+}
+function callRowHtml(c,i){
+  const hasRec=Boolean(c.recording_file && c.id!=null);
+  return `<tr onclick="showTranscript(${i})">
+    <td>${esc(c.time||"—")}</td>
+    <td>${esc(c.assistant||"—")}</td>
+    <td><span class="badge ${(c.direction||'outbound')==='inbound'?'in':'out'}">${(c.direction||'—').toUpperCase()}</span></td>
+    <td>${esc(c.duration||"—")}</td>
+    <td>${outcomePill(c.outcome)}</td>
+    <td>${sentPill(c.sentiment)}</td>
+    <td>${scorePill(c.lead_score)}</td>
+    <td class="row-rec-cell" onclick="event.stopPropagation()">${hasRec?`<button class="row-play" data-call-id="${c.id}" onclick="toggleInlinePlay(this,${c.id})" title="Play recording">${IC.play}</button>`:`<span class="row-play-none" title="No recording captured">${IC.lock}</span>`}</td>
+  </tr>`;
+}
+function filteredCalls(){
+  const q=(CALLS_STATE.q||"").trim().toLowerCase();
+  return (S.calls||[]).filter(c=>{
+    if(CALLS_STATE.dir!=="all" && (c.direction||"outbound")!==CALLS_STATE.dir) return false;
+    if(CALLS_STATE.recOnly && !c.recording_file) return false;
+    if(q && !(c.assistant||"").toLowerCase().includes(q)) return false;
+    return true;
+  });
+}
+function renderCallsTable(){
+  const all=S.calls||[], rows=filteredCalls();
+  const idxOf=c=>all.indexOf(c);
+  $("callsTableWrap").innerHTML = rows.length
+    ? `<div class="tablecard"><table><thead><tr><th>Time</th><th>Assistant</th><th>Dir</th><th>Duration</th><th>Outcome</th><th>Sentiment</th><th>Score</th><th>Rec</th></tr></thead><tbody>${rows.map(c=>callRowHtml(c,idxOf(c))).join("")}</tbody></table></div>`
+    : `<div class="empty"><div class="big">${IC.phone}</div><h3>No matching calls</h3><div>Try clearing the search or filters above.</div></div>`;
+}
+window.filterCalls=(q)=>{ CALLS_STATE.q=q; renderCallsTable(); };
+window.setCallsDir=(dir)=>{ CALLS_STATE.dir=dir; document.querySelectorAll('#callsDirSeg button').forEach(b=>{const on=b.dataset.dir===dir; b.classList.toggle('on-out',on); b.classList.toggle('on',on);}); renderCallsTable(); };
+window.setCallsRecOnly=(checked)=>{ CALLS_STATE.recOnly=checked; renderCallsTable(); };
+window.toggleInlinePlay=(btn,callId)=>{
+  const playing=CALLS_STATE.playing;
+  if(playing && playing.id===callId){
+    playing.audio.paused ? playing.audio.play() : playing.audio.pause();
+    return;
+  }
+  if(playing){ playing.audio.pause(); playing.btn.innerHTML=IC.play; }
+  const audio=new Audio(`/api/calls/${encodeURIComponent(callId)}/recording`);
+  btn.innerHTML=IC.pause;
+  audio.play().catch(()=>{ toast("Couldn't play recording",true); btn.innerHTML=IC.play; CALLS_STATE.playing=null; });
+  audio.onended=()=>{ btn.innerHTML=IC.play; CALLS_STATE.playing=null; };
+  audio.onpause=()=>{ btn.innerHTML=IC.play; };
+  audio.onplay=()=>{ btn.innerHTML=IC.pause; };
+  CALLS_STATE.playing={id:callId,audio,btn};
+};
+async function renderCalls(m){
+  m.innerHTML=topbar("Call Logs")+`<div class="content"><div class="listwrap">
+    <p class="sec-d">Transcripts, duration, outcomes, and recordings from your agents' calls — click a row to open the full detail, or hit play for a quick listen.</p>
+    <div id="callsOverview"><div class="hint">Loading…</div></div>
+    <div id="callsToolbar" style="display:none"></div>
+    <div id="callsTableWrap"><div class="hint">Loading…</div></div>
+  </div></div>`;
+  try{
+    const calls=await api("/api/calls"); S.calls=calls;
+    CALLS_STATE.playing=null;
+    if(!calls.length){
+      $("callsOverview").innerHTML="";
+      $("callsTableWrap").innerHTML=`<div class="empty"><div class="big">${IC.phone}</div><h3>No calls yet</h3><div>Once your agents start talking, every call shows up here with its transcript, outcome, sentiment, and recording.</div></div>`;
+      return;
+    }
+    $("callsOverview").innerHTML=callsOverviewHtml(calls);
+    $("callsToolbar").style.display="block";
+    $("callsToolbar").innerHTML=callsToolbarHtml();
+    renderCallsTable();
+  }catch(e){ $("callsOverview").innerHTML=""; $("callsTableWrap").innerHTML=`<div class="empty">Couldn't load calls.</div>`; }
+}
 async function renderAnalytics(m){
   m.innerHTML=topbar("Analytics")+`<div class="content"><div class="listwrap"><div id="ab"><div class="hint">Loading…</div></div></div></div>`;
   try{
     const a=await api("/api/analytics");
     if(!a.total){ $("ab").innerHTML=`<div class="empty"><div class="big">${IC.analytics}</div><h3>No data yet</h3><div>Analytics show up once your agents start making calls.</div></div>`; return; }
     const mm=Math.floor(a.avg_duration_secs/60), ss=String(a.avg_duration_secs%60).padStart(2,"0");
-    const tiles=[["Total calls",a.total],["Avg duration",mm+":"+ss],["Avg turns",a.avg_turns]];
+    const goodOutcomeCount=(a.by_outcome||[]).filter(x=>{const k=(x.key||"").toLowerCase();return /optin|enrol|booked/.test(k)||(/interested/.test(k)&&!/not/.test(k));}).reduce((sum,x)=>sum+x.count,0);
+    const conversionPct=a.total?Math.round((goodOutcomeCount/a.total)*100):0;
+    const tiles=[
+      {label:"Total calls",value:a.total,icon:IC.phone,accent:"var(--teal)"},
+      {label:"Avg duration",value:mm+":"+ss,icon:IC.clock,accent:"var(--amber)"},
+      {label:"Avg turns",value:a.avg_turns,icon:IC.chat,accent:"var(--teal2)"},
+      {label:"Conversion rate",value:conversionPct+"%",icon:IC.trend,accent:"var(--good)"}
+    ];
     const bars=(arr)=>{ const max=Math.max(1,...arr.map(x=>x.count)); return `<div class="bars">${arr.map(x=>`<div class="barrow"><span class="lab">${esc((x.key||"—").replace(/_/g," "))}</span><span class="track"><span class="fill" style="width:${Math.round(x.count/max*100)}%"></span></span><span class="n">${x.count}</span></div>`).join("")}</div>`; };
     const maxDay=Math.max(1,...a.by_day.map(d=>d.count));
     const days=a.by_day.length?`<div class="daybars">${a.by_day.map(d=>`<div class="d" style="cursor:pointer" title="${esc(d.day)}: ${d.count}" onclick="showDayCalls('${esc(d.day)}')"><div class="db" style="height:${Math.round(d.count/maxDay*100)}%"></div><span class="dl">${esc((d.day||"").slice(5))}</span></div>`).join("")}</div>`:`<div class="hint">No dated calls yet.</div>`;
     $("ab").innerHTML=`
-      <div class="stats">${tiles.map(t=>`<div class="stat"><div class="v">${esc(String(t[1]))}</div><div class="k">${t[0]}</div></div>`).join("")}</div>
+      <div class="stats">${tiles.map(t=>`<div class="stat" style="--stat-accent:${t.accent}"><div class="stat-top"><div class="stat-icon">${t.icon}</div></div><div class="v">${esc(String(t.value))}</div><div class="k">${t.label}</div></div>`).join("")}</div>
       <div class="row" style="align-items:start">
         <div class="sec"><div class="eyebrow">Outcomes</div><div class="card">${bars(a.by_outcome)}</div></div>
         <div class="sec"><div class="eyebrow">Sentiment</div><div class="card">${bars(a.by_sentiment)}</div></div>
@@ -889,6 +1005,22 @@ async function renderAnalytics(m){
 // ---- Call detail panel: tabbed, Vapi-style. Shared by Call Logs rows and Analytics day-bars. ----
 let CD={mode:null,index:null,day:null,tab:"transcript"};
 function cdWaveform(){ let bars=""; for(let i=0;i<64;i++){ const h=8+Math.round(Math.abs(Math.sin(i*0.7))*20+Math.random()*4); bars+=`<span class="cd-wavebar" style="height:${h}px"></span>`; } return bars; }
+function cdRecordingBlock(c){
+  if(c.recording_file && c.id!=null){
+    return `<div class="cd-recording">
+      <div class="cd-rec-head"><span>Recording</span></div>
+      <audio class="cd-audio" controls preload="none" src="/api/calls/${encodeURIComponent(c.id)}/recording"></audio>
+    </div>`;
+  }
+  return `<div class="cd-recording">
+      <div class="cd-rec-head"><span>Recording</span><span class="cd-rec-soon">${IC.clock} No recording</span></div>
+      <div class="cd-rec-controls">
+        <span class="cd-playbtn" title="No recording was captured for this call">${IC.lock}</span>
+        <div class="cd-waveform">${cdWaveform()}</div>
+      </div>
+      <div class="cd-rec-note">This call was captured as a transcript only — no audio was saved for it.</div>
+    </div>`;
+}
 function cdHeader(c){
   const chips=[c.outcome?`<span class="badge draft">${esc((c.outcome||"").replace(/_/g," "))}</span>`:"", c.sentiment?sentPill(c.sentiment):"", c.lead_score?scorePill(c.lead_score):""].filter(Boolean).join(" ");
   return `<div class="cd-head">
@@ -896,14 +1028,7 @@ function cdHeader(c){
       <div class="cd-meta"><span><b>${esc(c.time||"—")}</b></span><span>${esc(c.duration||"—")}</span><span><span class="badge ${(c.direction||'outbound')==='inbound'?'in':'out'}">${(c.direction||'—').toUpperCase()}</span></span></div>
       ${chips?`<div class="cd-chips">${chips}</div>`:""}
     </div>
-    <div class="cd-recording">
-      <div class="cd-rec-head"><span>Recording</span></div>
-      <div class="cd-rec-controls">
-        <span class="cd-playbtn" title="Recording playback coming soon">${IC.play}</span>
-        <div class="cd-waveform">${cdWaveform()}</div>
-      </div>
-      <div class="cd-rec-note">Call recording storage isn't connected yet — this call was captured as a transcript only.</div>
-    </div>`;
+    ${cdRecordingBlock(c)}`;
 }
 function cdTabs(active){
   const tabs=[["transcript","Transcript"],["summary","Summary"]];
@@ -932,17 +1057,23 @@ function cdSummaryBody(c){
     ${kv("Turns",c.turns!=null?esc(String(c.turns)):"")}
   `;
 }
+function updateBackButton(){
+  const show=Boolean(CD.day && CD.mode==="detail");
+  $("tBackBtn").style.display = show ? "flex" : "none";
+  $("tModal").classList.toggle("has-back", show);
+}
 function renderCallDetail(){
   const c=(S.calls||[])[CD.index]; if(!c)return;
   $("tHead").innerHTML=cdHeader(c);
   $("tTabs").style.display="flex";
   $("tTabs").innerHTML=cdTabs(CD.tab);
   $("tBody").innerHTML = CD.tab==="summary" ? cdSummaryBody(c) : cdTranscriptBody(c);
+  updateBackButton();
 }
 window.switchCallTab=(tab)=>{ CD.tab=tab; renderCallDetail(); };
-window.showTranscript=(i)=>{
+window.showTranscript=(i, fromDay)=>{
   const c=(S.calls||[])[i]; if(!c)return;
-  CD={mode:"detail",index:i,day:null,tab:"transcript"};
+  CD={mode:"detail",index:i,day:fromDay||null,tab:"transcript"};
   renderCallDetail();
   $("tOverlay").classList.add("show");
 };
@@ -953,12 +1084,14 @@ window.showDayCalls=async(day)=>{
   CD={mode:"daylist",index:null,day,tab:null};
   $("tHead").innerHTML=`<div class="cd-head"><h2 class="cd-title">Calls on ${esc(day)}</h2><div class="cd-meta"><span>${matches.length} call${matches.length===1?"":"s"}</span></div></div>`;
   $("tTabs").style.display="none"; $("tTabs").innerHTML="";
-  $("tBody").innerHTML = matches.map(({c,i})=>`<div class="cd-daylist-row" onclick="showTranscript(${i})">
+  $("tBody").innerHTML = matches.map(({c,i})=>`<div class="cd-daylist-row" onclick="showTranscript(${i},'${escA(day)}')">
     <div><strong style="font-size:12.5px">${esc(c.assistant||"—")}</strong><div style="margin-top:4px;display:flex;gap:6px;flex-wrap:wrap">${c.outcome?`<span class="badge draft">${esc((c.outcome||"").replace(/_/g," "))}</span>`:""}${c.sentiment?sentPill(c.sentiment):""}${c.lead_score?scorePill(c.lead_score):""}</div></div>
     <span style="color:var(--faint);font-size:11px;flex:none">${esc(c.time||"")}</span>
   </div>`).join("");
+  updateBackButton();
   $("tOverlay").classList.add("show");
 };
+window.backFromDetail=()=>{ if(CD.day) showDayCalls(CD.day); };
 window.closeCallDetail=()=>{ $("tOverlay").classList.remove("show"); };
 boot();
 </script>

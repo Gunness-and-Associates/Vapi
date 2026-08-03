@@ -28,6 +28,7 @@ import json
 import os
 import re
 import time
+import wave
 from datetime import datetime
 
 import aiohttp
@@ -44,6 +45,7 @@ from pipecat.processors.aggregators.llm_response_universal import (
     LLMContextAggregatorPair,
     LLMUserAggregatorParams,
 )
+from pipecat.processors.audio.audio_buffer_processor import AudioBufferProcessor
 from pipecat.runner.types import RunnerArguments
 from pipecat.runner.utils import create_transport
 from pipecat.services.deepgram.stt import DeepgramSTTService, DeepgramSTTSettings
@@ -60,6 +62,25 @@ load_dotenv(override=True)
 # ── Load the selected assistant ───────────────────────────────────────────────
 ASSISTANT_ID = os.getenv("ASSISTANT_ID", "hq_learning_hub")
 _ASSISTANTS_DIR = os.path.join(os.path.dirname(__file__), "assistants")
+
+# ── Call recording ─────────────────────────────────────────────────────────────
+RECORDINGS_DIR_NAME = "recordings"
+
+
+def save_recording_wav(assistant_dir: str, audio: bytes, sample_rate: int, num_channels: int) -> str:
+    """Write raw PCM audio captured during a call to a timestamped .wav file under
+    assistants/<id>/recordings/. Returns just the filename (not the full path) so it
+    can be stored on the call record and served later by admin.py."""
+    rec_dir = os.path.join(assistant_dir, RECORDINGS_DIR_NAME)
+    os.makedirs(rec_dir, exist_ok=True)
+    filename = f"call_{datetime.now().strftime('%Y%m%d_%H%M%S')}.wav"
+    path = os.path.join(rec_dir, filename)
+    with wave.open(path, "wb") as wf:
+        wf.setnchannels(num_channels)
+        wf.setsampwidth(2)  # 16-bit PCM
+        wf.setframerate(sample_rate)
+        wf.writeframes(audio)
+    return filename
 
 
 def load_assistant(assistant_id: str) -> dict:
@@ -262,6 +283,11 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
         ),
     )
 
+    # Call recording — captures both sides of the audio (caller + agent) as the call
+    # happens. Saved to a .wav file when the call ends; see save_recording_wav() and
+    # the on_audio_data handler below.
+    audiobuffer = AudioBufferProcessor()
+
     # Tools (function calling to HTTP actions). Only advertise tools that are
     # actually executable: end_call, or a tool with a webhook_url configured.
     tool_defs = [
@@ -315,6 +341,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
             llm,
             tts,
             transport.output(),
+            audiobuffer,
             assistant_aggregator,
         ]
     )
@@ -401,6 +428,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
         # End silently — the agent already said its goodbye out loud in its own turn,
         # so the tool must NOT add a second one (that caused the double "take care").
         await params.result_callback("")
+        await audiobuffer.stop_recording()
         await log_call()  # log now — on_client_disconnected may not fire after EndFrame
         await worker.queue_frames([EndFrame()])
 
@@ -454,7 +482,16 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
         )
         await worker.queue_frames([LLMRunFrame()])
 
-    call_state = {"start": None, "logged": False}
+    call_state = {"start": None, "logged": False, "recording_file": None}
+
+    @audiobuffer.event_handler("on_audio_data")
+    async def on_audio_data(buffer, audio, sample_rate, num_channels):
+        try:
+            filename = save_recording_wav(assistant_dir, audio, sample_rate, num_channels)
+            call_state["recording_file"] = filename
+            logger.info(f"Saved call recording: {filename}")
+        except Exception as e:
+            logger.error(f"Failed to save recording: {e}")
 
     async def log_call():
         """At call end, post a record (transcript, duration, outcome) to the dashboard.
@@ -483,6 +520,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
                 "outcome": "completed" if turns else "no_conversation",
                 "turns": len(turns),
                 "transcript": transcript,
+                "recording_file": call_state.get("recording_file") or "",
             }
             # End-of-call intelligence: classify outcome/sentiment/score/summary.
             if turns:
@@ -496,11 +534,13 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
     @transport.event_handler("on_client_connected")
     async def on_client_connected(transport, client):
         call_state["start"] = time.time()
+        await audiobuffer.start_recording()
         logger.info("Client connected")
 
     @transport.event_handler("on_client_disconnected")
     async def on_client_disconnected(transport, client):
         logger.info("Client disconnected")
+        await audiobuffer.stop_recording()
         await log_call()
         await worker.cancel()
 
