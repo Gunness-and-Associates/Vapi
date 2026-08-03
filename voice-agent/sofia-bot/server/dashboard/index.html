@@ -235,6 +235,38 @@
   .daybars .d{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end}
   .daybars .db{width:100%;background:linear-gradient(180deg,var(--teal2),var(--teal-deep));border-radius:4px 4px 0 0;min-height:2px}
   .daybars .dl{font-size:9px;color:var(--faint);white-space:nowrap}
+  /* call detail panel — tabbed, Vapi-style */
+  .calldetail{max-width:760px;width:100%}
+  .cd-head{padding-right:36px;margin-bottom:2px}
+  .cd-title{font-size:17px;font-weight:700;letter-spacing:-.02em;margin:0 0 8px}
+  .cd-meta{display:flex;flex-wrap:wrap;align-items:center;gap:12px;color:var(--faint);font-size:11.5px;margin-bottom:16px}
+  .cd-meta b{color:var(--muted);font-weight:650}
+  .cd-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+  .cd-recording{background:var(--bg2);border:1px solid var(--line2);border-radius:12px;padding:13px 15px;margin-bottom:18px}
+  .cd-rec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.07em;font-weight:700}
+  .cd-rec-controls{display:flex;align-items:center;gap:12px}
+  .cd-playbtn{width:32px;height:32px;border-radius:50%;background:var(--tglow);color:var(--teal);display:grid;place-items:center;flex:none;opacity:.45;cursor:not-allowed}
+  .cd-playbtn svg{width:13px;height:13px}
+  .cd-waveform{flex:1;height:32px;display:flex;align-items:center;gap:2px;overflow:hidden}
+  .cd-wavebar{width:3px;border-radius:2px;background:var(--line3);flex:none}
+  .cd-rec-note{margin-top:9px;font-size:10.5px;color:var(--faint);line-height:1.4}
+  .cd-tabs{display:flex;gap:0;border-bottom:1px solid var(--line);margin-bottom:16px}
+  .cd-tabs button{background:transparent;color:var(--muted);padding:10px 4px;margin-right:20px;border-radius:0;border-bottom:2px solid transparent;font-size:12.5px;font-weight:650}
+  .cd-tabs button:hover{color:var(--ink)}
+  .cd-tabs button.on{color:var(--teal);border-bottom-color:var(--teal)}
+  .cd-body{max-height:44vh;overflow:auto}
+  .cd-transcript-line{margin-bottom:14px}
+  .cd-transcript-line .who{font-size:10px;font-weight:750;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-bottom:4px}
+  .cd-transcript-line.agent .who{color:var(--teal)}
+  .cd-transcript-line .txt{font-size:13px;line-height:1.6;color:var(--ink)}
+  .cd-kv{display:grid;grid-template-columns:120px 1fr;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:12.5px}
+  .cd-kv:last-child{border-bottom:0}
+  .cd-kv .k{color:var(--faint)}
+  .cd-kv .val{color:var(--ink)}
+  .cd-summary-block{background:var(--bg2);border:1px solid var(--line2);border-radius:10px;padding:13px 15px;margin-bottom:14px;font-size:13px;line-height:1.65;color:var(--muted)}
+  .cd-daylist-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 8px;border-bottom:1px solid var(--line);cursor:pointer;border-radius:8px;margin:0 -8px;transition:.13s}
+  .cd-daylist-row:last-child{border-bottom:0}
+  .cd-daylist-row:hover{background:var(--s2)}
   /* assistant / tools / knowledge cards */
   .cardgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px}
   .acard{background:var(--s1);border:1px solid var(--line);border-radius:var(--r);padding:20px;cursor:pointer;transition:.15s;display:flex;flex-direction:column;gap:15px;box-shadow:var(--sh1)}
@@ -422,10 +454,11 @@
     </div>
     <div class="modal-foot"><button class="cancel" id="cancelNew" type="button">Cancel</button></div>
   </div></div>
-  <div class="overlay" id="tOverlay"><div class="modal" style="max-width:660px">
-    <h2 id="tTitle">Transcript</h2>
-    <div id="tBody" style="max-height:58vh;overflow:auto;white-space:pre-wrap;font-size:13px;line-height:1.75;color:var(--muted);background:var(--bg2);border:1px solid var(--line2);border-radius:12px;padding:18px"></div>
-    <button class="cancel" onclick="document.getElementById('tOverlay').classList.remove('show')" style="margin-top:16px">Close</button>
+  <div class="overlay" id="tOverlay"><div class="modal" id="tModal" style="max-width:660px">
+    <button class="modal-close" onclick="closeCallDetail()" type="button" aria-label="Close">&times;</button>
+    <div id="tHead"></div>
+    <div class="cd-tabs" id="tTabs" style="display:none"></div>
+    <div class="cd-body" id="tBody"></div>
   </div></div>
   <div class="toast" id="toast"></div>
 
@@ -853,32 +886,80 @@ async function renderAnalytics(m){
       </div>`;
   }catch(e){ $("ab").innerHTML=`<div class="empty">Couldn't load analytics.</div>`; }
 }
-window.showTranscript=(i)=>{ const c=(S.calls||[])[i]; if(!c)return; $("tTitle").textContent=(c.assistant||"Call")+" · "+(c.time||"");
+// ---- Call detail panel: tabbed, Vapi-style. Shared by Call Logs rows and Analytics day-bars. ----
+let CD={mode:null,index:null,day:null,tab:"transcript"};
+function cdWaveform(){ let bars=""; for(let i=0;i<64;i++){ const h=8+Math.round(Math.abs(Math.sin(i*0.7))*20+Math.random()*4); bars+=`<span class="cd-wavebar" style="height:${h}px"></span>`; } return bars; }
+function cdHeader(c){
   const chips=[c.outcome?`<span class="badge draft">${esc((c.outcome||"").replace(/_/g," "))}</span>`:"", c.sentiment?sentPill(c.sentiment):"", c.lead_score?scorePill(c.lead_score):""].filter(Boolean).join(" ");
-  const kv=(k,v)=>v?`<div style="margin-top:8px"><span style="color:var(--faint);font-size:11px;text-transform:uppercase;letter-spacing:.05em">${k}</span><div style="font-size:13px;margin-top:2px">${esc(v)}</div></div>`:"";
-  const panel = (chips||c.summary||c.next_step||c.objection)?`<div style="background:var(--s2);border:1px solid var(--line2);border-radius:12px;padding:14px 16px;margin-bottom:14px">${chips?`<div style="display:flex;gap:6px;flex-wrap:wrap">${chips}</div>`:""}${kv("Summary",c.summary)}${kv("Next step",c.next_step)}${kv("Objection",c.objection)}</div>`:"";
-  const tx = esc(c.transcript||"(no transcript captured)").replace(/\n/g,"<br>");
-  $("tBody").innerHTML = panel + `<div style="white-space:pre-wrap">${tx}</div>`;
-  $("tOverlay").classList.add("show"); };
+  return `<div class="cd-head">
+      <h2 class="cd-title">${esc(c.assistant||"Call")}</h2>
+      <div class="cd-meta"><span><b>${esc(c.time||"—")}</b></span><span>${esc(c.duration||"—")}</span><span><span class="badge ${(c.direction||'outbound')==='inbound'?'in':'out'}">${(c.direction||'—').toUpperCase()}</span></span></div>
+      ${chips?`<div class="cd-chips">${chips}</div>`:""}
+    </div>
+    <div class="cd-recording">
+      <div class="cd-rec-head"><span>Recording</span></div>
+      <div class="cd-rec-controls">
+        <span class="cd-playbtn" title="Recording playback coming soon">${IC.play}</span>
+        <div class="cd-waveform">${cdWaveform()}</div>
+      </div>
+      <div class="cd-rec-note">Call recording storage isn't connected yet — this call was captured as a transcript only.</div>
+    </div>`;
+}
+function cdTabs(active){
+  const tabs=[["transcript","Transcript"],["summary","Summary"]];
+  return tabs.map(([k,l])=>`<button class="${active===k?'on':''}" onclick="switchCallTab('${k}')">${l}</button>`).join("");
+}
+function cdTranscriptBody(c){
+  const raw=(c.transcript||"").trim();
+  if(!raw) return `<div class="hint">No transcript captured for this call.</div>`;
+  const lines=raw.split("\n").filter(Boolean);
+  return lines.map(line=>{
+    const m=line.match(/^(Caller|Agent):\s*(.*)$/i);
+    if(!m) return `<div class="cd-transcript-line"><div class="txt">${esc(line)}</div></div>`;
+    const who=m[1].toLowerCase()==="agent"?"agent":"caller";
+    return `<div class="cd-transcript-line ${who}"><div class="who">${esc(m[1])}</div><div class="txt">${esc(m[2])}</div></div>`;
+  }).join("");
+}
+function cdSummaryBody(c){
+  const kv=(k,val)=>`<div class="cd-kv"><span class="k">${k}</span><span class="val">${val||"—"}</span></div>`;
+  const summaryBlock=c.summary?`<div class="cd-summary-block">${esc(c.summary)}</div>`:`<div class="hint" style="margin-bottom:14px">No summary generated for this call.</div>`;
+  return summaryBlock+`
+    ${kv("Outcome",c.outcome?esc((c.outcome||"").replace(/_/g," ")):"")}
+    ${kv("Sentiment",c.sentiment?sentPill(c.sentiment):"")}
+    ${kv("Lead score",c.lead_score?scorePill(c.lead_score):"")}
+    ${kv("Next step",c.next_step?esc(c.next_step):"")}
+    ${kv("Objection",c.objection?esc(c.objection):"")}
+    ${kv("Turns",c.turns!=null?esc(String(c.turns)):"")}
+  `;
+}
+function renderCallDetail(){
+  const c=(S.calls||[])[CD.index]; if(!c)return;
+  $("tHead").innerHTML=cdHeader(c);
+  $("tTabs").style.display="flex";
+  $("tTabs").innerHTML=cdTabs(CD.tab);
+  $("tBody").innerHTML = CD.tab==="summary" ? cdSummaryBody(c) : cdTranscriptBody(c);
+}
+window.switchCallTab=(tab)=>{ CD.tab=tab; renderCallDetail(); };
+window.showTranscript=(i)=>{
+  const c=(S.calls||[])[i]; if(!c)return;
+  CD={mode:"detail",index:i,day:null,tab:"transcript"};
+  renderCallDetail();
+  $("tOverlay").classList.add("show");
+};
 window.showDayCalls=async(day)=>{
   if(!S.calls){ try{ S.calls=await api("/api/calls"); }catch(e){ toast("Couldn't load calls",true); return; } }
   const matches=(S.calls||[]).map((c,i)=>({c,i})).filter(({c})=>(c.time||"").startsWith(day));
   if(!matches.length){ toast("No calls found for "+day,true); return; }
-  $("tTitle").textContent="Calls on "+day+" ("+matches.length+")";
-  const rows=matches.map(({c,i})=>`<div style="padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer" onclick="showTranscript(${i})">
-    <div style="display:flex;justify-content:space-between;gap:10px">
-      <strong style="font-size:12.5px">${esc(c.assistant||"—")}</strong>
-      <span style="color:var(--faint);font-size:11px">${esc(c.time||"")}</span>
-    </div>
-    <div style="margin-top:4px;display:flex;gap:6px;flex-wrap:wrap">
-      ${c.outcome?`<span class="badge draft">${esc((c.outcome||"").replace(/_/g," "))}</span>`:""}
-      ${c.sentiment?sentPill(c.sentiment):""}
-      ${c.lead_score?scorePill(c.lead_score):""}
-    </div>
+  CD={mode:"daylist",index:null,day,tab:null};
+  $("tHead").innerHTML=`<div class="cd-head"><h2 class="cd-title">Calls on ${esc(day)}</h2><div class="cd-meta"><span>${matches.length} call${matches.length===1?"":"s"}</span></div></div>`;
+  $("tTabs").style.display="none"; $("tTabs").innerHTML="";
+  $("tBody").innerHTML = matches.map(({c,i})=>`<div class="cd-daylist-row" onclick="showTranscript(${i})">
+    <div><strong style="font-size:12.5px">${esc(c.assistant||"—")}</strong><div style="margin-top:4px;display:flex;gap:6px;flex-wrap:wrap">${c.outcome?`<span class="badge draft">${esc((c.outcome||"").replace(/_/g," "))}</span>`:""}${c.sentiment?sentPill(c.sentiment):""}${c.lead_score?scorePill(c.lead_score):""}</div></div>
+    <span style="color:var(--faint);font-size:11px;flex:none">${esc(c.time||"")}</span>
   </div>`).join("");
-  $("tBody").innerHTML=rows;
   $("tOverlay").classList.add("show");
 };
+window.closeCallDetail=()=>{ $("tOverlay").classList.remove("show"); };
 boot();
 </script>
 </body>

@@ -240,8 +240,8 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
         settings=OpenAILLMService.Settings(
             model=llm_cfg.get("model", os.getenv("OPENAI_MODEL", "gpt-4.1")),
             system_instruction=system_instruction,
-            max_tokens=220,      # ceiling only — brevity comes from the prompt; high enough
-                                 # that a normal reply never truncates mid-sentence
+            max_completion_tokens=220,  # ceiling only — brevity comes from the prompt; high enough
+                                        # that a normal reply never truncates mid-sentence
             temperature=0.6,
         ),
     )
