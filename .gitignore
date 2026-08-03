@@ -43,3 +43,4 @@ docs/
 # ── OS ──
 Thumbs.db
 .DS_Store
+voice-agent/sofia-bot/server/assistants/*/recordings/ 

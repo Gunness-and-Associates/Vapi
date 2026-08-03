@@ -20,6 +20,7 @@ import threading
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -486,8 +487,9 @@ _calls_write_lock = threading.Lock()
 _CALL_FIELDS = (
     "time", "assistant", "direction", "duration", "turns", "outcome",
     "sentiment", "lead_score", "summary", "next_step", "objection", "transcript",
+    "assistant_id", "recording_file",
 )
-_EXTRA_COLS = ("sentiment", "lead_score", "summary", "next_step", "objection")
+_EXTRA_COLS = ("sentiment", "lead_score", "summary", "next_step", "objection", "assistant_id", "recording_file")
 
 
 def _calls_conn() -> sqlite3.Connection:
@@ -506,10 +508,11 @@ def _init_calls_db():
                    time TEXT, assistant TEXT, direction TEXT, duration TEXT,
                    turns INTEGER, outcome TEXT, transcript TEXT,
                    sentiment TEXT, lead_score TEXT, summary TEXT,
-                   next_step TEXT, objection TEXT)"""
+                   next_step TEXT, objection TEXT,
+                   assistant_id TEXT, recording_file TEXT)"""
         )
         c.execute("CREATE INDEX IF NOT EXISTS idx_calls_id ON calls(id DESC)")
-        # migrate older DBs that predate the intelligence columns
+        # migrate older DBs that predate the intelligence / recording columns
         existing = {r[1] for r in c.execute("PRAGMA table_info(calls)").fetchall()}
         for col in _EXTRA_COLS:
             if col not in existing:
@@ -539,7 +542,7 @@ def list_calls(limit: int = 500, offset: int = 0):
     cols = ",".join(_CALL_FIELDS)
     with _calls_conn() as c:
         rows = c.execute(
-            f"SELECT {cols} FROM calls ORDER BY id DESC LIMIT ? OFFSET ?",
+            f"SELECT id,{cols} FROM calls ORDER BY id DESC LIMIT ? OFFSET ?",
             (limit, offset),
         ).fetchall()
     return [dict(r) for r in rows]
@@ -554,6 +557,25 @@ async def add_call(payload: dict):
         with _calls_conn() as c:
             c.execute(f"INSERT INTO calls({cols}) VALUES({ph})", row)
     return {"ok": True}
+
+
+@app.get("/api/calls/{call_id}/recording")
+def get_call_recording(call_id: int):
+    """Stream back the .wav file for a call, if one was captured. Looks the call up
+    by its database id (returned alongside every row from /api/calls) rather than by
+    filename, so the frontend never has to know the on-disk path."""
+    with _calls_conn() as c:
+        row = c.execute(
+            "SELECT assistant_id, recording_file FROM calls WHERE id=?", (call_id,)
+        ).fetchone()
+    if not row or not row["recording_file"]:
+        raise HTTPException(404, "No recording was captured for this call.")
+    aid = os.path.basename(row["assistant_id"] or "")
+    filename = os.path.basename(row["recording_file"] or "")
+    path = os.path.join(ASSISTANTS_DIR, aid, "recordings", filename)
+    if not aid or not filename or not os.path.isfile(path):
+        raise HTTPException(404, "Recording file not found on disk.")
+    return FileResponse(path, media_type="audio/wav", filename=filename)
 
 
 @app.get("/api/analytics")
