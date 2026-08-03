@@ -75,7 +75,7 @@
     </div>
 
     <div style="text-align:center">
-      <h1>Sofia</h1>
+      <h1 id="botName">Sofia</h1>
       <p class="sub">AI voice assistant</p>
     </div>
 
@@ -99,8 +99,27 @@
   const caps = document.getElementById("captions");
   const hint = document.getElementById("hint");
   const botAudio = document.getElementById("botAudio");
+  const botNameEl = document.getElementById("botName");
 
   let client = null, connected = false, analyserRAF = null;
+  let botName = "Assistant"; // fallback until we fetch the real name
+
+  async function loadAssistantName(){
+    if(!assistantId) return;
+    try{
+      const res = await fetch(`/api/assistants/${encodeURIComponent(assistantId)}`);
+      if(!res.ok) return;
+      const data = await res.json();
+      const name = data?.name || data?.assistant?.name || data?.config?.name;
+      if(name){
+        botName = name;
+        botNameEl.textContent = botName;
+        document.title = `${botName} · HQ Learning Hub`;
+        hint.textContent = `Click "Start call", allow your microphone, and just talk — ${botName} will pick up.`;
+      }
+    }catch(e){ console.warn("Could not load assistant name, using fallback", e); }
+  }
+  loadAssistantName();
 
   function setStatus(text, cls){
     statusText.textContent = text;
@@ -110,7 +129,7 @@
     if(!text) return;
     const d = document.createElement("div");
     d.className = "cap " + (who === "you" ? "you" : "sofia");
-    d.innerHTML = `<span class="who">${who === "you" ? "You" : "Sofia"}</span><span class="txt"></span>`;
+    d.innerHTML = `<span class="who">${who === "you" ? "You" : botName}</span><span class="txt"></span>`;
     d.querySelector(".txt").textContent = text;
     caps.appendChild(d); caps.scrollTop = caps.scrollHeight;
   }
@@ -150,8 +169,8 @@
           onConnected: () => { connected = true; setStatus("Listening…", "live"); orb.classList.remove("idle");
             btn.textContent = "End call"; btn.className = "btn-end"; btn.disabled = false; },
           onDisconnected: () => cleanup(),
-          onBotReady: () => setStatus("Sofia is here — go ahead", "live"),
-          onBotStartedSpeaking: () => { speaking(true); setStatus("Sofia is speaking", "live"); },
+          onBotReady: () => setStatus(`${botName} is here — go ahead`, "live"),
+          onBotStartedSpeaking: () => { speaking(true); setStatus(`${botName} is speaking`, "live"); },
           onBotStoppedSpeaking: () => { speaking(false); setStatus("Listening…", "live"); },
           onTranscript: (d) => { if(d?.text && d?.final !== false) addCap(d?.role === "user" ? "you" : "sofia", d.text); },
           onBotTranscript: (d) => addCap("sofia", d?.text),
