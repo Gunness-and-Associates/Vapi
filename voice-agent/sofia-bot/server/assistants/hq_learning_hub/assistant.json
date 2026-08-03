@@ -1,0 +1,22 @@
+{
+  "name": "HQ Learning Hub — Sofia",
+  "stt": {
+    "provider": "deepgram",
+    "model": "nova-3"
+  },
+  "llm": {
+    "provider": "openai",
+    "model": "gpt-4.1"
+  },
+  "tts": {
+    "provider": "elevenlabs",
+    "voice_id": "FGY2WhTYpPnrIDTdsKH5",
+    "model": "eleven_flash_v2_5",
+    "stability": 0.4,
+    "similarity_boost": 0.8,
+    "style": 0.3,
+    "speed": 0.9
+  },
+  "greeting": "Greet the person warmly as Sofia from HQ Learning Hub and ask if it's a good time for a quick chat.",
+  "vad_stop_secs": 0.5
+}
